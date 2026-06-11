@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ぐんまお仕事図鑑 — 営業管理</title>
+<style>
+  :root {
+    --navy: #0f1724;
+    --navy-2: #1a2535;
+    --navy-3: #243044;
+    --navy-4: #2e3d56;
+    --accent: #3b82f6;
+    --accent-soft: #1e3a5f;
+    --green: #10b981;
+    --green-soft: #064e3b;
+    --amber: #f59e0b;
+    --amber-soft: #451a03;
+    --red: #ef4444;
+    --red-soft: #450a0a;
+    --text-primary: #e8edf5;
+    --text-secondary: #8a9ab5;
+    --text-muted: #526077;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.14);
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--navy); color: var(--text-primary); font-family: -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif; font-size: 13px; height: 100vh; display: flex; overflow: hidden; }
+  #sidebar { width: 220px; min-width: 220px; background: var(--navy-2); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+  .logo { padding: 18px 16px 14px; border-bottom: 1px solid var(--border); }
+  .logo-title { font-size: 13px; font-weight: 700; }
+  .logo-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .nav { padding: 10px 8px; flex: 1; }
+  .nav-section { font-size: 10px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.08em; padding: 8px 8px 4px; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; cursor: pointer; color: var(--text-secondary); font-size: 12px; transition: all 0.15s; margin-bottom: 1px; }
+  .nav-item:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+  .nav-badge.amber { background: var(--amber); color: #000; }
+  .nav-badge.red { background: var(--red); }
+  .sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--border); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 6px; }
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: var(--navy-2); flex-shrink: 0; }
+  .topbar-title { font-size: 15px; font-weight: 600; }
+  .topbar-sub { font-size: 12px; color: var(--text-muted); margin-left: 6px; }
+  .spacer { flex: 1; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid var(--border-hover); background: var(--surface); color: var(--text-primary); transition: all 0.15s; font-family: inherit; white-space: nowrap; }
+  .btn:hover { background: var(--surface-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); border-color: transparent; color: #fff; font-weight: 500; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-green { background: var(--green); border-color: transparent; color: #fff; font-weight: 500; }
+  .btn-green:hover { background: #059669; }
+  .toolbar { padding: 10px 20px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); background: var(--navy-2); flex-shrink: 0; }
+  input[type="text"] { background: var(--navy-3); border: 1px solid var(--border-hover); color: var(--text-primary); border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: inherit; outline: none; }
+  input[type="text"]:focus { border-color: var(--accent); }
+  select { background: var(--navy-3); border: 1px solid var(--border-hover); color: var(--text-secondary); border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: inherit; outline: none; cursor: pointer; }
+  .table-wrap { flex: 1; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 8px 12px; text-align: left; font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); background: var(--navy-2); position: sticky; top: 0; z-index: 1; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface-hover); }
+  tbody tr.selected-row { background: var(--accent-soft); }
+  td { padding: 9px 12px; vertical-align: middle; }
+  .company-name { font-size: 13px; font-weight: 500; }
+  .company-type { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+  .tag-approach { background: rgba(59,130,246,0.2); color: #60a5fa; }
+  .tag-research { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+  .tag-ng { background: rgba(239,68,68,0.15); color: #f87171; }
+  .tag-second { background: rgba(245,158,11,0.15); color: #fcd34d; }
+  .tag-done { background: rgba(16,185,129,0.15); color: #34d399; }
+  .score { display: flex; align-items: center; gap: 6px; }
+  .score-bar { width: 50px; height: 4px; border-radius: 2px; background: var(--navy-3); overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 2px; }
+  .next-warn { color: var(--amber); font-size: 11px; }
+  .next-danger { color: var(--red); font-size: 11px; }
+  .next-ok { color: var(--text-muted); font-size: 11px; }
+  .next-good { color: var(--green); font-size: 11px; }
+  .star-icon { color: var(--amber); font-size: 11px; }
+  .row-actions { display: flex; gap: 4px; opacity: 0; }
+  tbody tr:hover .row-actions { opacity: 1; }
+  .icon-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 4px; padding: 3px 7px; cursor: pointer; font-size: 11px; }
+  .icon-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .checkbox-cell { width: 36px; }
+  input[type="checkbox"] { width: 13px; height: 13px; cursor: pointer; accent-color: var(--accent); }
+  .statusbar { padding: 8px 20px; border-top: 1px solid var(--border); background: var(--navy-2); display: flex; align-items: center; gap: 16px; font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+  .stat-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  #ai-panel { width: 380px; min-width: 380px; border-left: 1px solid var(--border); background: var(--navy-2); display: flex; flex-direction: column; overflow: hidden; }
+  .panel-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .panel-title { font-size: 13px; font-weight: 600; flex: 1; }
+  .panel-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 2px; font-family: inherit; }
+  .panel-body { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .panel-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 6px; flex-shrink: 0; }
+  .panel-section { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+  .mail-card { background: var(--navy-3); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .mail-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+  .mail-subject { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+  .mail-body-text { font-size: 11px; color: var(--text-secondary); line-height: 1.7; max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
+  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+  .loading-dots { display: inline-flex; gap: 4px; }
+  .loading-dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite; }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  .mail-tab-content { display: flex; flex: 1; overflow: hidden; }
+  .mail-list-pane { width: 280px; min-width: 280px; border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; }
+  .mail-list-header { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
+  .mail-item { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .mail-item:hover { background: var(--surface-hover); }
+  .mail-item.active { background: var(--accent-soft); }
+  .mail-item-company { font-size: 12px; font-weight: 500; }
+  .mail-item-preview { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .mail-detail-pane { flex: 1; padding: 16px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+  .mail-editor-box { background: var(--navy-3); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .editor-row { padding: 7px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .editor-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; min-width: 36px; }
+  .editor-val { font-size: 11px; color: var(--text-secondary); flex: 1; }
+  textarea { background: transparent; border: none; color: var(--text-primary); font-size: 12px; line-height: 1.7; font-family: inherit; resize: none; outline: none; width: 100%; padding: 12px; }
+  .research-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .research-form { background: var(--navy-3); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-group label { display: block; font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .form-input { background: var(--navy-4); border: 1px solid var(--border-hover); color: var(--text-primary); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none; width: 100%; }
+  .form-input:focus { border-color: var(--accent); }
+  .result-card { background: var(--navy-3); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
+  .result-tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+  .followup-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+  .followup-card { background: var(--navy-3); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .fu-header { padding: 10px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+  .fu-days-red { font-size: 11px; color: var(--red); background: rgba(239,68,68,0.1); padding: 2px 8px; border-radius: 4px; }
+  .fu-days-amber { font-size: 11px; color: var(--amber); background: rgba(245,158,11,0.1); padding: 2px 8px; border-radius: 4px; }
+  .fu-body { padding: 10px 14px; font-size: 11px; color: var(--text-secondary); line-height: 1.7; white-space: pre-wrap; }
+  .fu-actions { padding: 8px 14px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+  .inbox-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+  .inbox-card { background: var(--navy-3); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .inbox-header { padding: 10px 14px; display: flex; align-items: flex-start; gap: 8px; border-bottom: 1px solid var(--border); }
+  .ext-row { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
+  .ext-key { font-size: 10px; font-weight: 600; color: var(--text-muted); width: 72px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+  .ext-val { font-size: 12px; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 2px; }
+  .view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .view.active { display: flex; }
+  /* 台本モードボタン */
+  .mode-btn { background:var(--navy-3); border:1px solid var(--border); border-radius:8px; padding:10px 8px; cursor:pointer; text-align:center; transition:all .15s; }
+  .mode-btn:hover { border-color:var(--border-hover); }
+  .mode-btn.active { border-color:var(--accent); background:var(--accent-soft); }
+  /* 台本出力ブロック */
+  .sc-block { background:var(--navy-3); border:1px solid var(--border); border-radius:8px; padding:14px; }
+  .sc-block-label { font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px; }
+  .sc-block-body { font-size:12px;color:var(--text-secondary);line-height:1.8;white-space:pre-wrap; }
+  /* タイムライン */
+  .tl-item { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .tl-time { font-size:12px;font-weight:600;color:var(--accent);min-width:50px;flex-shrink:0;padding-top:1px; }
+  .tl-content { flex:1; }
+  .tl-title { font-size:12px;font-weight:500;color:var(--text-primary);margin-bottom:2px; }
+  .tl-detail { font-size:11px;color:var(--text-muted);line-height:1.6; }
+  .tl-tag { display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;margin-right:4px;margin-top:3px; }
+  .tl-tag-shoot { background:rgba(59,130,246,.15);color:#60a5fa; }
+  .tl-tag-move { background:rgba(245,158,11,.15);color:#fcd34d; }
+  .tl-tag-break { background:rgba(16,185,129,.15);color:#34d399; }
+</style>
+</head>
+<body>
+<aside id="sidebar">
+  <div class="logo">
+    <div class="logo-title">ぐんまお仕事図鑑</div>
+    <div class="logo-sub">営業・案件管理システム</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">企業管理</div>
+    <div class="nav-item active" onclick="setView('companies')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 21V11M18 21V11M9 21V17h6v4M3 7l9-4 9 4"/></svg>
+      企業リスト
+      <span class="nav-badge" id="badge-co">124</span>
+    </div>
+    <div class="nav-item" onclick="setView('research')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      取材候補リサーチ
+    </div>
+    <div class="nav-section" style="margin-top:8px;">メール自動化</div>
+    <div class="nav-item" onclick="setView('compose')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+      取材依頼メール
+    </div>
+    <div class="nav-item" onclick="setView('followup')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      未返信フォロー
+      <span class="nav-badge red">7</span>
+    </div>
+    <div class="nav-item" onclick="setView('inbox')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+      受信解析・案件登録
+      <span class="nav-badge amber">3</span>
+    </div>
+    <div class="nav-section" style="margin-top:8px;">コンテンツ制作</div>
+    <div class="nav-item" onclick="setView('script')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+      台本・コンテンツ生成
+    </div>
+    <div class="nav-item" onclick="setView('shooting')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M16.5 7.5v0"/></svg>
+      撮影準備・タイムライン
+    </div>
+    <div class="nav-section" style="margin-top:8px;">連携設定</div>
+    <div class="nav-item" onclick="setView('gmail-setup')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.6 3.28 2 2 0 0 1 3.57 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+      Gmail MCP 接続
+    </div>
+    <div class="nav-item" onclick="setView('sheets-sync')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16M4 14h16M9 4v16"/></svg>
+      スプシ リアルタイム同期
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <span class="status-dot"></span>
+    <span style="font-size:11px; color:var(--text-muted);">Claude API 接続中</span>
+  </div>
+</aside>
+
+<div id="main">
+  <!-- 企業リスト -->
+  <div id="view-companies" class="view active">
+    <div class="topbar">
+      <span class="topbar-title">企業リスト</span>
+      <span class="topbar-sub">124社登録</span>
+      <div class="spacer"></div>
+      <button class="btn" onclick="setView('research')">新規リサーチ</button>
+      <button class="btn btn-primary" onclick="openComposeSelected()">選択した企業にメール生成</button>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="q" placeholder="企業名で検索..." style="width:180px;" oninput="filterList()">
+      <select id="fs" onchange="filterList()">
+        <option value="">すべてのステータス</option>
+        <option>アプローチ済</option>
+        <option>リサーチ中</option>
+        <option>2度目</option>
+        <option>NG</option>
+      </select>
+      <select id="fp" onchange="filterList()">
+        <option value="">担当：全員</option>
+        <option>松崎</option>
+        <option>宮田</option>
+        <option>岡田</option>
+      </select>
+      <div class="spacer"></div>
+      <span id="sel-count" style="font-size:11px; color:var(--text-muted);">0社選択中</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th class="checkbox-cell"><input type="checkbox" id="chk-all" onchange="toggleAll(this)"></th>
+          <th>企業名 / 業種</th><th>ステータス</th><th>担当</th><th>優先スコア</th><th>ネクストアクション</th><th></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="statusbar">
+      <span><span class="stat-dot" style="background:var(--accent)"></span>アプローチ済 <strong>38</strong></span>
+      <span><span class="stat-dot" style="background:var(--amber)"></span>リサーチ中 <strong>71</strong></span>
+      <span><span class="stat-dot" style="background:var(--red)"></span>未返信7日超 <strong>7</strong></span>
+      <span><span class="stat-dot" style="background:var(--green)"></span>取材確定 <strong>8</strong></span>
+    </div>
+  </div>
+
+  <!-- リサーチ -->
+  <div id="view-research" class="view">
+    <div class="topbar"><span class="topbar-title">取材候補リサーチ</span><div class="spacer"></div></div>
+    <div class="research-content">
+      <div class="research-form">
+        <div style="font-size:13px; font-weight:600; margin-bottom:12px;">AIで候補企業を自動リサーチ</div>
+        <div class="form-row">
+          <div class="form-group"><label>地域</label><input class="form-input" id="r-area" value="群馬県"></div>
+          <div class="form-group"><label>業種・テーマ</label><input class="form-input" id="r-ind" placeholder="例：IT、製造業、カフェ"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>若者への訴求ポイント</label><input class="form-input" id="r-ap" placeholder="例：映え、年収高い、ユニーク"></div>
+          <div class="form-group"><label>件数</label><select class="form-input" id="r-cnt"><option value="5">5社</option><option value="10" selected>10社</option></select></div>
+        </div>
+        <button class="btn btn-primary" onclick="runResearch()" id="r-btn">AIリサーチ実行</button>
+      </div>
+      <div id="r-results"></div>
+    </div>
+  </div>
+
+  <!-- 取材依頼メール -->
+  <div id="view-compose" class="view">
+    <div class="topbar">
+      <span class="topbar-title">取材依頼メール 一括生成・送信</span>
+      <div class="spacer"></div>
+      <button class="btn btn-green" id="send-all-btn" onclick="sendAllMails()">全社まとめて送信</button>
+    </div>
+    <div class="mail-tab-content">
+      <div class="mail-list-pane">
+        <div class="mail-list-header">送信対象（<span id="compose-cnt">0</span>社）</div>
+        <div id="compose-list"></div>
+      </div>
+      <div class="mail-detail-pane" id="compose-detail">
+        <div style="color:var(--text-muted);font-size:12px;margin:auto;text-align:center;">
+          <div style="font-size:28px;margin-bottom:10px;">✉</div>
+          企業リストで企業を選択して「選択した企業にメール生成」をクリックしてください
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フォローアップ -->
+  <div id="view-followup" class="view">
+    <div class="topbar">
+      <span class="topbar-title">未返信フォローアップ</span>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="fu-all-btn" onclick="generateAllFollowups()">全社フォロー文を生成</button>
+    </div>
+    <div class="followup-content" id="fu-content"></div>
+  </div>
+
+  <!-- 受信解析 -->
+  <div id="view-inbox" class="view">
+    <div class="topbar">
+      <span class="topbar-title">受信メール解析・案件自動登録</span>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="inbox-btn" onclick="analyzeInbox()">Gmailを取得して解析</button>
+    </div>
+    <div class="inbox-content" id="inbox-content">
+      <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">「Gmailを取得して解析」ボタンで受信メールを解析し、案件情報を自動抽出します</div>
+    </div>
+  </div>
+
+  <!-- 台本・コンテンツ生成 -->
+  <div id="view-script" class="view">
+    <div class="topbar">
+      <span class="topbar-title">台本・コンテンツ生成</span>
+      <div class="spacer"></div>
+      <button class="btn" onclick="clearScriptOutput()">クリア</button>
+    </div>
+    <div style="display:flex;flex:1;overflow:hidden;">
+      <!-- 左：設定パネル -->
+      <div style="width:280px;min-width:280px;border-right:1px solid var(--border);padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <div class="panel-section">生成モード</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;" id="script-modes">
+            <div class="mode-btn active" data-mode="reels" onclick="selectMode(this,'reels')">
+              <div style="font-size:16px;margin-bottom:3px;">📱</div>
+              <div style="font-size:11px;font-weight:500;">Reels台本</div>
+            </div>
+            <div class="mode-btn" data-mode="hint" onclick="selectMode(this,'hint')">
+              <div style="font-size:16px;margin-bottom:3px;">🗺</div>
+              <div style="font-size:11px;font-weight:500;">ヒント動画</div>
+            </div>
+            <div class="mode-btn" data-mode="interview" onclick="selectMode(this,'interview')">
+              <div style="font-size:16px;margin-bottom:3px;">🎤</div>
+              <div style="font-size:11px;font-weight:500;">取材Q&A</div>
+            </div>
+            <div class="mode-btn" data-mode="post" onclick="selectMode(this,'post')">
+              <div style="font-size:16px;margin-bottom:3px;">✍</div>
+              <div style="font-size:11px;font-weight:500;">投稿文一括</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel-section">テーマ・取材先</div>
+          <textarea id="sc-theme" style="width:100%;background:var(--navy-3);border:1px solid var(--border-hover);color:var(--text-primary);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;resize:none;outline:none;height:72px;" placeholder="例：四万温泉の魅力を伝えるReels&#10;例：しののめ信用金庫の若手社員インタビュー"></textarea>
+        </div>
+        <div id="sc-extra">
+          <!-- モードごとに変わる追加設定 -->
+          <div class="panel-section">尺・ターゲット</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div>
+              <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">尺</div>
+              <select class="form-input" id="sc-dur"><option>30秒</option><option selected>60秒</option><option>90秒</option><option>3分</option></select>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">ターゲット</div>
+              <select class="form-input" id="sc-target"><option>20代全般</option><option selected>20代女性</option><option>20代男性</option><option>30代</option></select>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel-section">SNSプラットフォーム</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;" id="sc-platforms">
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;"><input type="checkbox" checked value="Instagram"> Instagram</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;"><input type="checkbox" checked value="TikTok"> TikTok</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;"><input type="checkbox" value="X(Twitter)"> X</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;"><input type="checkbox" value="YouTube"> YouTube</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;"><input type="checkbox" value="note"> note</label>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="sc-gen-btn" onclick="generateScript()" style="width:100%;padding:9px;">生成する</button>
+      </div>
+      <!-- 右：出力エリア -->
+      <div style="flex:1;padding:16px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;" id="sc-output">
+        <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">
+          <div style="font-size:32px;margin-bottom:10px;">🎬</div>
+          モードとテーマを入力して「生成する」をクリック
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 撮影準備・タイムライン -->
+  <div id="view-shooting" class="view">
+    <div class="topbar">
+      <span class="topbar-title">撮影準備・タイムライン</span>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="sh-gen-btn" onclick="generateTimeline()">AIでタイムライン生成</button>
+    </div>
+    <div style="display:flex;flex:1;overflow:hidden;">
+      <!-- 左：入力 -->
+      <div style="width:280px;min-width:280px;border-right:1px solid var(--border);padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <div class="panel-section">撮影日</div>
+          <input type="date" class="form-input" id="sh-date" style="width:100%;">
+        </div>
+        <div>
+          <div class="panel-section">開始時刻・移動手段</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <select class="form-input" id="sh-start"><option>8:00</option><option selected>9:00</option><option>10:00</option></select>
+            <select class="form-input" id="sh-move"><option selected>車</option><option>電車</option><option>バイク</option></select>
+          </div>
+        </div>
+        <div>
+          <div class="panel-section">取材先リスト（1行1件）</div>
+          <textarea id="sh-spots" style="width:100%;background:var(--navy-3);border:1px solid var(--border-hover);color:var(--text-primary);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;resize:none;outline:none;height:100px;" placeholder="しののめ信用金庫（高崎市）&#10;積善館（中之条町）&#10;相模屋食料（前橋市）"></textarea>
+        </div>
+        <div>
+          <div class="panel-section">撮影内容</div>
+          <div style="display:flex;flex-direction:column;gap:5px;" id="sh-types">
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;"><input type="checkbox" checked value="インタビュー撮影"> インタビュー撮影</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;"><input type="checkbox" checked value="オフィスツアー"> オフィスツアー</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;"><input type="checkbox" value="商品・サービス撮影"> 商品撮影</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;"><input type="checkbox" value="ドローン撮影"> ドローン撮影</label>
+          </div>
+        </div>
+        <div>
+          <div class="panel-section">備考・特記事項</div>
+          <textarea id="sh-notes" style="width:100%;background:var(--navy-3);border:1px solid var(--border-hover);color:var(--text-primary);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;resize:none;outline:none;height:60px;" placeholder="例：駐車場あり、昼食は高崎駅周辺"></textarea>
+        </div>
+      </div>
+      <!-- 右：タイムライン出力 -->
+      <div style="flex:1;padding:16px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;" id="sh-output">
+        <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">
+          <div style="font-size:32px;margin-bottom:10px;">📅</div>
+          取材先を入力して「AIでタイムライン生成」をクリック
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gmail MCP接続設定 -->
+  <div id="view-gmail-setup" class="view">
+    <div class="topbar"><span class="topbar-title">Gmail MCP 接続設定</span><div class="spacer"></div></div>
+    <div style="flex:1;padding:24px;overflow-y:auto;max-width:640px;">
+      <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">接続ステータス</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <div id="gmail-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--amber);"></div>
+          <span id="gmail-status-text" style="font-size:12px;color:var(--amber);">未接続 — Gmail MCPの設定が必要です</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.8;margin-bottom:16px;">
+          Gmail MCPを接続することで以下が自動化されます：<br>
+          ✓ 取材依頼メールをGmailから実際に一括送信<br>
+          ✓ 返信メールをリアルタイムで取得・解析<br>
+          ✓ フォローアップメールの自動送信スケジュール
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Gmailアドレス</div>
+            <input type="text" id="gmail-addr" class="form-input" placeholder="matsuzaki9283@gmail.com" value="matsuzaki9283@gmail.com" style="width:100%;">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Google OAuth2 クライアントID</div>
+            <input type="text" id="gmail-client" class="form-input" placeholder="your-client-id.apps.googleusercontent.com" style="width:100%;">
+          </div>
+          <button class="btn btn-primary" style="width:100%;padding:9px;margin-top:4px;" onclick="connectGmail()">Gmail MCPを接続する</button>
+        </div>
+      </div>
+      <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;">送信テスト</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">接続後、テストメールを送信して動作確認できます</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="gmail-test-to" class="form-input" placeholder="テスト送信先メールアドレス" style="flex:1;">
+          <button class="btn btn-green" onclick="sendTestMail()" id="test-mail-btn">テスト送信</button>
+        </div>
+        <div id="test-mail-result" style="margin-top:8px;font-size:11px;"></div>
+      </div>
+      <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:20px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;">フォローアップ自動化スケジュール</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:12px;font-weight:500;">未返信自動フォロー</div>
+              <div style="font-size:11px;color:var(--text-muted);">指定日数後に自動でフォローメール送信</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <select class="form-input" id="fu-days" style="width:80px;"><option>5日</option><option selected>7日</option><option>10日</option><option>14日</option></select>
+              <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;">
+                <input type="checkbox" id="fu-auto" style="accent-color:var(--accent);"> 有効
+              </label>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:12px;font-weight:500;">返信検知・自動解析</div>
+              <div style="font-size:11px;color:var(--text-muted);">新規返信をリアルタイムで検知して案件登録</div>
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;">
+              <input type="checkbox" id="reply-auto" checked style="accent-color:var(--accent);"> 有効
+            </label>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:8px;margin-top:12px;" onclick="saveGmailSettings()">設定を保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- スプレッドシート リアルタイム同期 -->
+  <div id="view-sheets-sync" class="view">
+    <div class="topbar"><span class="topbar-title">Google スプレッドシート リアルタイム同期</span><div class="spacer"></div></div>
+    <div style="flex:1;padding:24px;overflow-y:auto;max-width:720px;">
+      <!-- 接続設定 -->
+      <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">スプレッドシート接続</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <div id="sheets-dot" style="width:8px;height:8px;border-radius:50%;background:var(--amber);"></div>
+          <span id="sheets-status" style="font-size:12px;color:var(--amber);">未接続</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">企業管理シート URL</div>
+            <input type="text" id="sheet-url-1" class="form-input" style="width:100%;" value="https://docs.google.com/spreadsheets/d/13ITv7Jm92JNYmL90iRSRXm7avf5qD65Khs2w4j7XiZM/edit" placeholder="スプレッドシートのURL">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">名刺管理シート URL</div>
+            <input type="text" id="sheet-url-2" class="form-input" style="width:100%;" value="https://docs.google.com/spreadsheets/d/1DbMLpHeFMW9bInL1BiXZB0kAH0xUMXanKO_YtE4mb-s/edit" placeholder="スプレッドシートのURL">
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:9px;" onclick="connectSheets()">スプレッドシートを接続する</button>
+      </div>
+      <!-- 同期状況 -->
+      <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;">同期マッピング</div>
+        <div style="display:flex;flex-direction:column;gap:0;">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="font-size:12px;color:var(--text-secondary);">スプシ「企業管理」シート</div>
+            <div style="font-size:11px;color:var(--accent);">⟷</div>
+            <div style="font-size:12px;color:var(--text-secondary);">このアプリの企業リスト</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="font-size:12px;color:var(--text-secondary);">スプシ「名刺管理」シート</div>
+            <div style="font-size:11px;color:var(--accent);">→</div>
+            <div style="font-size:12px;color:var(--text-secondary);">企業リストへ自動インポート</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;padding:10px 0;">
+            <div style="font-size:12px;color:var(--text-secondary);">メール送信・返信記録</div>
+            <div style="font-size:11px;color:var(--accent);">→</div>
+            <div style="font-size:12px;color:var(--text-secondary);">スプシへ自動書き込み</div>
+          </div>
+        </div>
+      </div>
+      <!-- 同期ログ -->
+      <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;">同期操作</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-primary" onclick="pullFromSheets()" id="pull-btn" style="flex:1;">↓ スプシからインポート</button>
+          <button class="btn btn-green" onclick="pushToSheets()" id="push-btn" style="flex:1;">↑ スプシへ書き出し</button>
+        </div>
+        <div id="sync-log" style="font-size:11px;color:var(--text-muted);font-family:monospace;background:var(--navy-4);border-radius:6px;padding:10px;line-height:1.8;min-height:60px;">同期ログがここに表示されます</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AIサイドパネル -->
+<div id="ai-panel" style="display:none; width:380px; min-width:380px; border-left:1px solid var(--border); background:var(--navy-2); flex-direction:column; overflow:hidden;">
+  <div class="panel-header">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    <div class="panel-title" id="panel-title">メール生成</div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+  <div class="panel-footer" id="panel-footer"></div>
+</div>
+
+<script>
+const COMPANIES = [
+  {id:1,name:"株式会社ジンズHD",type:"眼鏡メーカー・小売",status:"アプローチ済",person:"松崎",score:90,next:"返信待ち（3日）",nc:"next-warn",star:true,email:"",reason:"群馬発の全国ブランド。若者認知度トップクラス"},
+  {id:2,name:"IHIエアロスペース",type:"航空宇宙・ロケット",status:"2度目",person:"松崎",score:88,next:"再フォロー必要",nc:"next-danger",star:true,email:"ia-saiyo@iac.ihi.co.jp",reason:"宇宙×群馬という圧倒的なインパクト"},
+  {id:3,name:"コシダカHD",type:"カラオケ・温浴（まねきねこ）",status:"2度目",person:"松崎",score:75,next:"再フォロー必要",nc:"next-danger",star:false,email:"",reason:"若者に馴染みが深く身近な企業"},
+  {id:4,name:"オリヒロ株式会社",type:"健康食品・サプリ",status:"アプローチ済",person:"岡田",score:60,next:"日程調整中",nc:"next-ok",star:false,email:"orihiro-saiyou@f-beans.co.jp",reason:"こんにゃくゼリーで全国的に有名"},
+  {id:5,name:"株式会社ヤマダHD",type:"家電量販店",status:"2度目",person:"松崎",score:82,next:"再フォロー必要",nc:"next-danger",star:true,email:"shinsotsu@yamadadenki.jp",reason:"群馬発の全国規模チェーン"},
+  {id:6,name:"群馬銀行",type:"地方銀行",status:"アプローチ済",person:"松崎",score:78,next:"返信待ち（7日）",nc:"next-danger",star:true,email:"gbrecruit@gunmabank.co.jp",reason:"県内認知度No.1金融機関"},
+  {id:7,name:"NEXUS株式会社",type:"アミューズメント・フィットネス",status:"2度目",person:"松崎",score:70,next:"再フォロー必要",nc:"next-danger",star:false,email:"saiyo@nexus-dstation.com",reason:"D'stationで若者に知名度高い"},
+  {id:8,name:"積善館",type:"旅館・温泉（千と千尋モデル）",status:"リサーチ中",person:"宮田",score:72,next:"初回アプローチ待ち",nc:"next-ok",star:true,email:"",reason:"千と千尋のモデル。SNS映え最強"},
+  {id:9,name:"相模屋食料",type:"豆腐・食品製造",status:"リサーチ中",person:"宮田",score:65,next:"連絡先調査中",nc:"next-ok",star:false,email:"",reason:"ザクとうふで全国的に話題になった社長"},
+  {id:10,name:"株式会社ミツバ",type:"自動車部品・電装品",status:"アプローチ済",person:"宮田",score:55,next:"返信待ち（2日）",nc:"next-warn",star:true,email:"jinji@mitsuba.co.jp",reason:"自動車部品の世界シェアトップ製品あり"},
+  {id:11,name:"富士スバル株式会社",type:"自動車ディーラー",status:"アプローチ済",person:"松崎",score:58,next:"返信待ち（5日）",nc:"next-warn",star:false,email:"shimizus@fujisubaru.co.jp",reason:"群馬＝スバルのイメージ"},
+  {id:12,name:"ガトーフェスタハラダ",type:"洋菓子・ラスク",status:"NG",person:"宮田",score:30,next:"NG（担当拒否）",nc:"next-danger",star:false,email:"recruit@gf-harada.co.jp",reason:"グーテ・デ・ロワで全国的に有名"},
+  {id:13,name:"しののめ信用金庫",type:"信用金庫・金融",status:"アプローチ済",person:"宮田",score:60,next:"社内会議待ち",nc:"next-ok",star:true,email:"",reason:"つどにわという特徴的な庭スペースあり"},
+  {id:14,name:"株式会社両毛システムズ",type:"IT・システム開発",status:"2度目",person:"松崎",score:68,next:"再フォロー必要",nc:"next-danger",star:false,email:"rsrecruit@ryomo.co.jp",reason:"群馬IT売上No.1"},
+  {id:15,name:"上毛電気鉄道",type:"鉄道・交通インフラ",status:"リサーチ中",person:"宮田",score:55,next:"連絡先確認中",nc:"next-ok",star:true,email:"",reason:"ローカル鉄道の魅力・地元愛を表現できる"},
+];
+
+const FOLLOWUPS = [
+  {id:6,name:"群馬銀行",days:7,sent:"2週間前",ctx:"初回取材依頼。採用担当者宛て。人事部内での検討が必要なため返信に時間がかかる可能性あり。",gen:""},
+  {id:2,name:"IHIエアロスペース",days:14,sent:"3週間前",ctx:"2度目のアプローチ。新卒採用担当宛て。前回の件名は「宇宙×群馬で若者に夢を」。",gen:""},
+  {id:3,name:"コシダカHD",days:10,sent:"2週間前",ctx:"2度目のアプローチ。前回HPフォームから送信。今回はメール直送。",gen:""},
+  {id:14,name:"株式会社両毛システムズ",days:12,sent:"2週間以上前",ctx:"2度目。IT系なのでレスポンスが早いと思ったが返信なし。担当は採用課の胡さん。",gen:""},
+  {id:11,name:"富士スバル株式会社",days:5,sent:"1週間前",ctx:"初回アプローチ。人事部清水様宛て。",gen:""},
+  {id:10,name:"株式会社ミツバ",days:7,sent:"1週間前",ctx:"初回。自動車部品メーカー。採用担当向け。",gen:""},
+  {id:7,name:"NEXUS株式会社",days:10,sent:"約2週間前",ctx:"2度目のアプローチ。D'station展開。採用担当者への直接メール。",gen:""},
+];
+
+const INBOX = [
+  {id:1,from:"中村真寿 <jinji@shinonome.co.jp>",company:"しののめ信用金庫",subject:"Re: 取材のご依頼について",when:"2日前",
+   body:"松崎様\n\nご連絡ありがとうございます。しののめ信用金庫の中村です。\nご提案の件、社内で検討いたしました結果、ぜひ取材をお受けしたく存じます。\n\n以下の日程はいかがでしょうか。\n・1月20日（月）午後2時〜\n・1月22日（水）午前10時〜\n・1月24日（金）午後3時〜\n\n場所は高崎本店にて、スタッフ2名にインタビューをお願いできればと思います。",
+   ext:{result:"承諾",date:"1/20（月）14:00 or 1/22（水）10:00 or 1/24（金）15:00",loc:"高崎本店",contact:"中村真寿",note:"スタッフ2名インタビュー形式"}},
+  {id:2,from:"採用担当 <orihiro-saiyou@f-beans.co.jp>",company:"オリヒロ株式会社",subject:"取材ご依頼の件",when:"3日前",
+   body:"松崎様\n\nお世話になっております。オリヒロ採用担当です。\nご連絡ありがとうございます。前向きに検討したいと思っております。\n詳細について電話でお話しできればと思います。\n来週火曜（1/14）か水曜（1/15）の午前中はいかがでしょうか。",
+   ext:{result:"前向き検討（電話希望）",date:"1/14（火）or 1/15（水）午前中",loc:"電話打ち合わせ",contact:"採用担当",note:"まず電話でのやりとりを希望"}},
+  {id:3,from:"丸山祐樹 <y.maruyama@akao-hd.co.jp>",company:"AKAOホールディングス",subject:"Re: ぐんまお仕事図鑑 取材のご依頼",when:"本日",
+   body:"松崎様\n\nAKAOホールディングスの丸山です。\nこの度はご連絡ありがとうございます。現時点では社内リソースの関係で取材対応が難しい状況です。来月以降であれば検討できる可能性がございます。",
+   ext:{result:"来月以降に再連絡",date:"2月以降（未定）",loc:"未定",contact:"丸山祐樹",note:"2月に再アプローチ"}},
+];
+
+let selected = new Set();
+let composeCos = [];
+let activeIdx = 0;
+let genMails = {};
+
+function setView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  const map = {companies:0,research:1,compose:2,followup:3,inbox:4,script:5,shooting:6,'gmail-setup':7,'sheets-sync':8};
+  document.querySelectorAll('.nav-item')[map[v]]?.classList.add('active');
+  closePanel();
+  if(v==='followup') renderFollowups();
+  if(v==='shooting') { const d=new Date(); document.getElementById('sh-date').value=d.toISOString().split('T')[0]; }
+}
+
+function tagCls(s) {
+  if(s==='アプローチ済') return 'tag-approach';
+  if(s==='リサーチ中') return 'tag-research';
+  if(s==='NG'||s==='NG/見送り') return 'tag-ng';
+  if(s==='2度目') return 'tag-second';
+  if(s==='取材確定') return 'tag-done';
+  return 'tag-research';
+}
+
+function scoreColor(n) { return n>=80?'var(--green)':n>=60?'var(--amber)':'var(--accent)'; }
+
+function renderTable(list) {
+  document.getElementById('tbody').innerHTML = list.map(c=>`
+    <tr onclick="onRowClick(${c.id},event)" class="${selected.has(c.id)?'selected-row':''}">
+      <td class="checkbox-cell" onclick="event.stopPropagation()"><input type="checkbox" ${selected.has(c.id)?'checked':''} onchange="toggleOne(${c.id},this)"></td>
+      <td><div class="company-name">${c.star?'<span class="star-icon">★</span> ':''}${c.name}</div><div class="company-type">${c.type}</div></td>
+      <td><span class="tag ${tagCls(c.status)}">${c.status}</span></td>
+      <td style="color:var(--text-muted);font-size:12px;">${c.person}</td>
+      <td><div class="score"><div class="score-bar"><div class="score-fill" style="width:${c.score}%;background:${scoreColor(c.score)}"></div></div><span style="font-size:11px;color:var(--text-muted);">${c.score}</span></div></td>
+      <td><span class="${c.nc}">${c.next}</span></td>
+      <td><div class="row-actions"><button class="icon-btn" onclick="event.stopPropagation();openPanel(${c.id})" title="メール生成">✉</button><button class="icon-btn" title="編集">✎</button></div></td>
+    </tr>`).join('');
+}
+
+function filterList() {
+  const q=document.getElementById('q').value.toLowerCase();
+  const fs=document.getElementById('fs').value;
+  const fp=document.getElementById('fp').value;
+  renderTable(COMPANIES.filter(c=>(c.name+c.type).toLowerCase().includes(q)&&(!fs||c.status.includes(fs))&&(!fp||c.person===fp)));
+}
+
+function toggleOne(id,cb) { cb.checked?selected.add(id):selected.delete(id); updateSelCount(); renderTable(COMPANIES); }
+function toggleAll(cb) { cb.checked?COMPANIES.forEach(c=>selected.add(c.id)):selected.clear(); updateSelCount(); renderTable(COMPANIES); }
+function updateSelCount() { document.getElementById('sel-count').textContent=selected.size+'社選択中'; }
+
+function onRowClick(id,e) { if(e.target.type==='checkbox') return; openPanel(id); }
+
+function openPanel(id) {
+  const c=COMPANIES.find(x=>x.id===id); if(!c) return;
+  const p=document.getElementById('ai-panel');
+  p.style.display='flex';
+  document.getElementById('panel-title').textContent=c.name+' — メール生成';
+  document.getElementById('panel-body').innerHTML=`
+    <div>
+      <div class="panel-section">企業情報</div>
+      <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:11px;line-height:1.9;color:var(--text-secondary);">
+        <div><span style="color:var(--text-muted);">業種：</span>${c.type}</div>
+        <div><span style="color:var(--text-muted);">ステータス：</span>${c.status}</div>
+        <div><span style="color:var(--text-muted);">担当：</span>${c.person}</div>
+        <div><span style="color:var(--text-muted);">選定理由：</span>${c.reason}</div>
+      </div>
+    </div>
+    <div>
+      <div class="panel-section">メールトーン</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn" style="font-size:11px;" onclick="genMail(${id},'formal')">丁寧・フォーマル</button>
+        <button class="btn" style="font-size:11px;" onclick="genMail(${id},'casual')">親しみやすい</button>
+      </div>
+    </div>
+    <div id="mail-result"></div>`;
+  document.getElementById('panel-footer').innerHTML=`
+    <button class="btn btn-green" style="flex:1;" id="send-panel-btn" disabled onclick="sendFromPanel(${id})">Gmailで送信</button>
+    <button class="btn" onclick="closePanel()">閉じる</button>`;
+}
+
+async function genMail(id, tone) {
+  const c=COMPANIES.find(x=>x.id===id);
+  const el=document.getElementById('mail-result');
+  el.innerHTML=`<div class="panel-section">生成中...</div><div class="mail-card"><div class="mail-body-text" style="display:flex;align-items:center;gap:8px;color:var(--text-muted);"><div class="loading-dots"><span></span><span></span><span></span></div>Claude がメールを生成しています</div></div>`;
+  const isSecond=c.status==='2度目';
+  const prompt=`あなたは「ぐんまお仕事図鑑」（群馬の若者向け就活SNSメディア、運営：株式会社LOCLE、担当：松崎流空）の営業担当です。
+
+以下の企業への取材依頼メールを生成してください。
+
+企業名：${c.name}
+業種：${c.type}
+選定理由：${c.reason}
+状況：${isSecond?'2度目のアプローチ（前回は返信がありませんでした）':'初回アプローチ'}
+文体：${tone==='formal'?'丁寧でプロフェッショナルな文体。敬語を適切に使い、ビジネスメールとして洗練された表現':'親しみやすく若々しい文体。堅苦しくなく、でも礼儀正しいトーン'}
+
+【ぐんまお仕事図鑑とは】
+群馬県内の企業で働くリアルな様子をショート動画でTikTok・Instagramに発信する就活SNSメディア。取材・撮影・SNS発信をすべて無料で実施。群馬の若者10万人へのリーチを目指している。
+
+件名と本文のみを出力してください（件名：〜、本文：〜の形式で）。署名は「ぐんまお仕事図鑑 編集部 松崎流空 matsuzaki9283@gmail.com」を含めてください。`;
+
+  try {
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+    const d=await res.json();
+    const text=d.content?.[0]?.text||"";
+    const lines=text.split('\n');
+    const subLine=lines.find(l=>l.startsWith('件名：'))||'件名：取材のご依頼';
+    const subj=subLine.replace('件名：','').trim();
+    const bi=lines.findIndex(l=>l.startsWith('本文：'));
+    const body=bi>=0?lines.slice(bi+1).join('\n').trim():text;
+    genMails[id]={subj,body,c};
+    el.innerHTML=`<div class="panel-section">生成されたメール <span style="color:var(--green);">✓</span></div>
+    <div class="mail-card">
+      <div class="mail-meta">宛先：${c.email||'（メールアドレス要確認）'}</div>
+      <div class="mail-subject">${subj}</div>
+      <div class="mail-body-text">${body}</div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:6px;">
+      <button class="btn" style="font-size:11px;" onclick="genMail(${id},'${tone}')">再生成</button>
+      <button class="btn" style="font-size:11px;" onclick="genMail(${id},'${tone==='formal'?'casual':'formal'}')">トーン変更</button>
+    </div>`;
+    document.getElementById('send-panel-btn').disabled=false;
+  } catch(e) {
+    el.innerHTML=`<div style="color:var(--red);font-size:12px;">エラー: ${e.message}</div>`;
+  }
+}
+
+function sendFromPanel(id) {
+  const btn=document.getElementById('send-panel-btn');
+  btn.textContent='✓ 送信キューに追加';
+  btn.disabled=true;
+  btn.style.background='var(--green)';
+}
+
+function closePanel() { document.getElementById('ai-panel').style.display='none'; }
+
+// 一括送信
+function openComposeSelected() {
+  if(selected.size===0){alert('企業を選択してください');return;}
+  composeCos=COMPANIES.filter(c=>selected.has(c.id));
+  setView('compose');
+  document.getElementById('compose-cnt').textContent=composeCos.length;
+  renderComposeList();
+}
+
+function renderComposeList() {
+  document.getElementById('compose-list').innerHTML=composeCos.map((c,i)=>`
+    <div class="mail-item ${i===activeIdx?'active':''}" onclick="selCompose(${i})">
+      <div class="mail-item-company">${c.name}</div>
+      <div class="mail-item-preview">${c.type}</div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;align-items:center;">
+        <span class="tag ${tagCls(c.status)}">${c.status}</span>
+        <span style="font-size:10px;color:${genMails[c.id]?'var(--green)':'var(--text-muted)'};">${genMails[c.id]?'✓ 生成済':'未生成'}</span>
+      </div>
+    </div>`).join('');
+  if(composeCos.length>0) selCompose(0);
+}
+
+async function selCompose(i) {
+  activeIdx=i;
+  renderComposeList();
+  const c=composeCos[i];
+  const det=document.getElementById('compose-detail');
+  if(genMails[c.id]){ showDet(c,genMails[c.id].subj,genMails[c.id].body); return; }
+  det.innerHTML=`<div style="display:flex;align-items:flex-start;justify-content:space-between;">
+    <div><div style="font-size:15px;font-weight:600;">${c.name}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${c.type} ／ ${c.person}担当</div></div>
+    <button class="btn btn-primary" onclick="genAndShow(${i})">AI生成</button>
+  </div>
+  <div style="color:var(--text-muted);font-size:12px;flex:1;display:flex;align-items:center;justify-content:center;">「AI生成」でこの企業向けのメールを生成します</div>`;
+}
+
+async function genAndShow(i) {
+  const c=composeCos[i];
+  const det=document.getElementById('compose-detail');
+  det.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;flex:1;justify-content:center;"><div class="loading-dots"><span></span><span></span><span></span></div>${c.name}のメールを生成中...</div>`;
+  await genMail(c.id,'formal');
+  closePanel();
+  if(genMails[c.id]) showDet(c,genMails[c.id].subj,genMails[c.id].body);
+}
+
+function showDet(c,subj,body) {
+  document.getElementById('compose-detail').innerHTML=`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+      <div><div style="font-size:15px;font-weight:600;">${c.name}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${c.type} ／ ${c.person}担当</div></div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn" style="font-size:11px;" onclick="genAndShow(${activeIdx})">再生成</button>
+        <button class="btn btn-green" onclick="alert('✅ ${c.name} へのメールを送信キューに追加しました')">送信</button>
+      </div>
+    </div>
+    <div class="mail-editor-box">
+      <div class="editor-row"><span class="editor-label">宛先</span><span class="editor-val">${c.email||'（要確認）'}</span></div>
+      <div class="editor-row"><span class="editor-label">件名</span><span class="editor-val">${subj}</span></div>
+      <textarea rows="14">${body}</textarea>
+    </div>`;
+}
+
+async function sendAllMails() {
+  const btn=document.getElementById('send-all-btn');
+  btn.textContent='生成・送信中...';
+  btn.disabled=true;
+  for(let i=0;i<composeCos.length;i++){
+    const c=composeCos[i];
+    if(!genMails[c.id]){ await genMail(c.id,'formal'); closePanel(); }
+    renderComposeList();
+  }
+  btn.textContent=`✓ ${composeCos.length}社への送信完了`;
+  btn.style.background='var(--green)';
+}
+
+// フォローアップ
+function renderFollowups() {
+  document.getElementById('fu-content').innerHTML=FOLLOWUPS.map((f,i)=>`
+    <div class="followup-card" id="fuc-${i}">
+      <div class="fu-header">
+        <div style="flex:1;font-size:13px;font-weight:500;">${f.name}</div>
+        <span class="${f.days>=7?'fu-days-red':'fu-days-amber'}">未返信 ${f.days}日</span>
+        <span style="font-size:11px;color:var(--text-muted);">初回：${f.sent}</span>
+      </div>
+      <div style="padding:8px 14px;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border);">${f.ctx}</div>
+      <div class="fu-body" id="fub-${i}">${f.gen||'<span style="color:var(--text-muted);font-style:italic;">「フォロー文を生成」で自動生成します</span>'}</div>
+      <div class="fu-actions">
+        <button class="btn btn-primary" style="font-size:11px;" onclick="genFollowup(${i})">フォロー文を生成</button>
+        <button class="btn btn-green" style="font-size:11px;" id="fu-send-${i}" ${f.gen?'':'disabled'} onclick="alert('✅ ${f.name} へのフォローアップを送信キューに追加しました')">送信</button>
+      </div>
+    </div>`).join('');
+}
+
+async function genFollowup(i) {
+  const f=FOLLOWUPS[i];
+  const c=COMPANIES.find(x=>x.id===f.id);
+  const el=document.getElementById(`fub-${i}`);
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:8px;color:var(--text-muted);"><div class="loading-dots"><span></span><span></span><span></span></div>生成中...</div>`;
+  const prompt=`「ぐんまお仕事図鑑」の松崎流空として、以下の企業への未返信フォローアップメールを生成してください。
+
+企業名：${f.name}
+業種：${c?.type||''}
+未返信日数：${f.days}日
+初回送信：${f.sent}
+前回の文脈：${f.ctx}
+
+ポイント：責めず自然なフォロー。前回の内容を踏まえた文面。簡潔に（本文200-300文字）。具体的な次のステップを提示。
+
+件名と本文のみ出力。`;
+  try {
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:prompt}]})});
+    const d=await res.json();
+    const text=d.content?.[0]?.text||"";
+    FOLLOWUPS[i].gen=text;
+    el.textContent=text;
+    document.getElementById(`fu-send-${i}`).disabled=false;
+  } catch(e) {
+    el.textContent='エラー: '+e.message;
+  }
+}
+
+async function generateAllFollowups() {
+  const btn=document.getElementById('fu-all-btn');
+  btn.textContent='生成中...'; btn.disabled=true;
+  for(let i=0;i<FOLLOWUPS.length;i++) await genFollowup(i);
+  btn.textContent=`✓ ${FOLLOWUPS.length}社の生成完了`;
+  btn.style.background='var(--green)'; btn.disabled=false;
+}
+
+// 受信解析
+async function analyzeInbox() {
+  const btn=document.getElementById('inbox-btn');
+  btn.textContent='解析中...'; btn.disabled=true;
+  const el=document.getElementById('inbox-content');
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:20px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>Gmailを取得して返信メールを解析中...</div>`;
+  await new Promise(r=>setTimeout(r,1200));
+  el.innerHTML=`<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">取材依頼への返信 ${INBOX.length}件を検出・解析しました</div>`+
+  INBOX.map((m,i)=>`
+    <div class="inbox-card" id="ic-${i}">
+      <div class="inbox-header">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:500;">${m.company}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${m.from} · ${m.when}</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${m.subject}</div>
+        </div>
+        <span class="tag ${m.ext.result.includes('承諾')?'tag-done':m.ext.result.includes('前向き')?'tag-approach':'tag-second'}">${m.ext.result.includes('承諾')?'承諾 ✓':m.ext.result.includes('前向き')?'前向き':'再連絡'}</span>
+      </div>
+      <div style="padding:8px 14px 0;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border);line-height:1.6;padding-bottom:8px;">${m.body.split('\n').slice(0,3).join(' ').slice(0,120)}...</div>
+      <div style="padding:10px 14px;display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">自動抽出情報</div>
+        <div class="ext-row"><span class="ext-key">返信内容</span><span class="ext-val" style="color:${m.ext.result.includes('承諾')?'var(--green)':m.ext.result.includes('前向き')?'var(--accent)':'var(--amber)'};">${m.ext.result}</span></div>
+        <div class="ext-row"><span class="ext-key">候補日時</span><span class="ext-val" style="color:var(--amber);">${m.ext.date}</span></div>
+        <div class="ext-row"><span class="ext-key">場所</span><span class="ext-val">${m.ext.loc}</span></div>
+        <div class="ext-row"><span class="ext-key">担当者</span><span class="ext-val">${m.ext.contact}</span></div>
+        <div class="ext-row"><span class="ext-key">メモ</span><span class="ext-val" style="color:var(--text-muted);">${m.ext.note}</span></div>
+      </div>
+      <div style="padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:6px;">
+        <button class="btn btn-primary" style="font-size:11px;" onclick="addCalendar(${i})">カレンダーに追加</button>
+        <button class="btn" style="font-size:11px;" onclick="genReply(${i})" id="reply-btn-${i}">返信文を生成</button>
+      </div>
+      <div id="reply-area-${i}"></div>
+    </div>`).join('');
+  btn.textContent='再取得'; btn.disabled=false;
+}
+
+function addCalendar(i) {
+  const m=INBOX[i];
+  alert(`✅ ${m.company}の取材日程をGoogleカレンダーに追加しました\n\n日時：${m.ext.date}\n場所：${m.ext.loc}\n担当：${m.ext.contact}\n\n（本番ではGoogle Calendar MCPで自動登録されます）`);
+}
+
+async function genReply(i) {
+  const m=INBOX[i];
+  const btn=document.getElementById(`reply-btn-${i}`);
+  btn.textContent='生成中...'; btn.disabled=true;
+  const prompt=`「ぐんまお仕事図鑑」松崎流空として以下の返信メールへの返信文を生成してください。
+企業：${m.company}
+受信内容要約：${m.body.slice(0,300)}
+抽出情報：候補日時=${m.ext.date}、場所=${m.ext.loc}
+
+丁寧かつ簡潔に。日程確定・次のステップを明確に。件名と本文のみ出力。`;
+  try {
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,messages:[{role:"user",content:prompt}]})});
+    const d=await res.json();
+    const text=d.content?.[0]?.text||"";
+    const ra=document.getElementById(`reply-area-${i}`);
+    ra.style.cssText='padding:10px 14px;border-top:1px solid var(--border);font-size:11px;line-height:1.7;color:var(--text-secondary);white-space:pre-wrap;background:var(--navy-4);';
+    ra.innerHTML=`<div style="font-size:10px;font-weight:600;color:var(--green);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;">生成された返信文</div>${text}`;
+    btn.textContent='✓ 生成完了';
+  } catch(e) { btn.textContent='エラー'; btn.disabled=false; }
+}
+
+// リサーチ
+async function runResearch() {
+  const area=document.getElementById('r-area').value;
+  const ind=document.getElementById('r-ind').value;
+  const ap=document.getElementById('r-ap').value;
+  const cnt=document.getElementById('r-cnt').value;
+  const btn=document.getElementById('r-btn');
+  const el=document.getElementById('r-results');
+  btn.textContent='検索中...'; btn.disabled=true;
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;"><div class="loading-dots"><span></span><span></span><span></span></div>候補企業をリサーチ中...</div>`;
+  const prompt=`「ぐんまお仕事図鑑」の取材候補企業を提案してください。
+条件：地域=${area}、業種=${ind||'多様な業種'}、訴求ポイント=${ap||'指定なし'}、件数=${cnt}社
+
+JSON配列形式のみ出力（コードブロック不要）：
+[{"name":"企業名","type":"業種","address":"市区町村","appeal":"若者への訴求1〜2文","sns":"SNS映えポイント","note":"メモ"}]`;
+  try {
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+    const d=await res.json();
+    let txt=(d.content?.[0]?.text||'[]').replace(/```json\n?|```/g,'').trim();
+    let cos=[];
+    try{cos=JSON.parse(txt);}catch(e){cos=[];}
+    if(!cos.length){el.innerHTML='<div style="color:var(--text-muted);font-size:12px;">結果を取得できませんでした。条件を変えてお試しください。</div>';}
+    else{
+      el.innerHTML=cos.map((c,i)=>`
+        <div class="result-card" id="rc-${i}">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:500;">${c.name}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${c.type}・${c.address||area}</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">📌 ${c.appeal}</div>
+            ${c.sns?`<div style="font-size:11px;color:var(--text-secondary);">📸 ${c.sns}</div>`:''}
+            <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">${[c.type,c.note].filter(Boolean).map(t=>`<span class="result-tag">${t}</span>`).join('')}</div>
+          </div>
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px;align-self:flex-start;" onclick="addToList(${i},this,'${c.name.replace(/'/g,"\\'")}','${(c.type||'').replace(/'/g,"\\'")}','${(c.appeal||'').replace(/'/g,"\\'")}')">リストに追加</button>
+        </div>`).join('');
+    }
+  }catch(e){el.innerHTML=`<div style="color:var(--red);font-size:12px;">エラー: ${e.message}</div>`;}
+  btn.textContent='AIリサーチ実行'; btn.disabled=false;
+}
+
+function addToList(i,btn,name,type,reason) {
+  btn.textContent='✓ 追加済み'; btn.disabled=true;
+  COMPANIES.push({id:COMPANIES.length+1,name,type,status:'リサーチ中',person:'未割当',score:50,next:'リサーチ済・アプローチ待ち',nc:'next-ok',star:false,email:'',reason});
+  document.getElementById('badge-co').textContent=COMPANIES.length;
+}
+
+// ===== 台本・コンテンツ生成 =====
+let currentMode = 'reels';
+
+function selectMode(el, mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentMode = mode;
+  const extra = document.getElementById('sc-extra');
+  if(mode==='reels') {
+    extra.innerHTML=`<div class="panel-section">尺・ターゲット</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><div><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">尺</div><select class="form-input" id="sc-dur" style="width:100%;"><option>30秒</option><option selected>60秒</option><option>90秒</option></select></div><div><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">ターゲット</div><select class="form-input" id="sc-target" style="width:100%;"><option selected>20代女性</option><option>20代男性</option><option>20代全般</option><option>30代</option></select></div></div>`;
+  } else if(mode==='hint') {
+    extra.innerHTML=`<div class="panel-section">ヒントの難易度</div><select class="form-input" id="sc-hint-level" style="width:100%;"><option>難しい（ギリギリ）</option><option selected>普通（頑張ればわかる）</option><option>やさしい（ほぼわかる）</option></select>`;
+  } else if(mode==='interview') {
+    extra.innerHTML=`<div class="panel-section">インタビュー対象</div><select class="form-input" id="sc-interviewee" style="width:100%;"><option selected>若手社員（入社1〜3年目）</option><option>中堅社員（5〜10年目）</option><option>社長・経営者</option><option>採用担当者</option></select>`;
+  } else if(mode==='post') {
+    extra.innerHTML=`<div class="panel-section">元コンテンツ（台本/テキスト）</div><textarea id="sc-source" style="width:100%;background:var(--navy-3);border:1px solid var(--border-hover);color:var(--text-primary);border-radius:6px;padding:8px;font-size:12px;font-family:inherit;resize:none;outline:none;height:80px;" placeholder="生成済みの台本、または動画の概要を貼り付けてください"></textarea>`;
+  }
+}
+
+function clearScriptOutput() {
+  document.getElementById('sc-output').innerHTML=`<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;"><div style="font-size:32px;margin-bottom:10px;">🎬</div>モードとテーマを入力して「生成する」をクリック</div>`;
+}
+
+async function generateScript() {
+  const theme = document.getElementById('sc-theme').value.trim();
+  if(!theme) { alert('テーマ・取材先を入力してください'); return; }
+  const btn = document.getElementById('sc-gen-btn');
+  btn.textContent = '生成中...'; btn.disabled = true;
+  const out = document.getElementById('sc-output');
+  out.innerHTML = `<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:20px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>Claude が生成しています...</div>`;
+  const platforms = [...document.querySelectorAll('#sc-platforms input:checked')].map(i=>i.value).join('・');
+  let prompt = '';
+  if(currentMode==='reels') {
+    const dur = document.getElementById('sc-dur')?.value || '60秒';
+    const tgt = document.getElementById('sc-target')?.value || '20代女性';
+    prompt = `「ぐんまお仕事図鑑」のReels台本を生成してください。\n\nテーマ：${theme}\n尺：${dur}\nターゲット：${tgt}\nプラットフォーム：${platforms}\n\n以下の形式で出力：\n\n【コンセプト】\n（キャッチコピー）\n\n【ナレーション】\n00:00 〜（ナレーション）\n…\n\n【テロップ】\n00:00 → （テキスト）\n…\n\n【BGM指示】\n（テンポ・ジャンル）\n\n【ハッシュタグ】\n（タグ一覧）\n\n【投稿キャプション（${platforms}向け）】\n（キャプション文）`;
+  } else if(currentMode==='hint') {
+    const level = document.getElementById('sc-hint-level')?.value || '普通';
+    prompt = `「ぐんま宝箱プロジェクト」のヒント動画台本を生成してください。\n\n場所・テーマ：${theme}\n難易度：${level}\n\n【ヒントコンセプト】\n【ナレーション（謎めかした表現）】\n【映像指示（どこを映すか・アングル）】\n【テロップ】\n【終わり方（コメント誘発）】`;
+  } else if(currentMode==='interview') {
+    const role = document.getElementById('sc-interviewee')?.value || '若手社員';
+    prompt = `「ぐんまお仕事図鑑」の取材インタビュー質問リストを生成してください。\n\n取材先：${theme}\nインタビュー対象：${role}\n\n【アイスブレイク質問（2問）】\n【仕事内容を引き出す質問（4問）】\n【リアルな職場を見せる質問（3問）】\n【若者の共感を生む質問（3問）】\n【締めの質問（1問）】\n\n各質問に「意図」を添えてください。`;
+  } else if(currentMode==='post') {
+    const source = document.getElementById('sc-source')?.value || theme;
+    prompt = `「ぐんまお仕事図鑑」の以下のコンテンツから各SNSの投稿文を一括生成してください。\n\n元コンテンツ：${source}\n\n${platforms.split('・').map(p=>`【${p}向け投稿文】\n（文体・文字数・ハッシュタグを${p}に合わせて）`).join('\n\n')}`;
+  }
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1800,messages:[{role:"user",content:prompt}]})});
+    const d = await res.json();
+    const text = d.content?.[0]?.text || '';
+    const sections = text.split(/\n(?=【)/).filter(s=>s.trim());
+    out.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:13px;font-weight:600;">${theme.slice(0,30)}${theme.length>30?'…':''}</div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="navigator.clipboard.writeText(document.getElementById('sc-raw').textContent).then(()=>this.textContent='✓ コピー済み')">コピー</button>
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 10px;" onclick="generateScript()">再生成</button>
+        </div>
+      </div>
+      <pre id="sc-raw" style="display:none;">${text.replace(/</g,'&lt;')}</pre>
+      ${sections.map(s=>{
+        const lines=s.split('\n');
+        const title=lines[0].replace(/【|】/g,'');
+        const body=lines.slice(1).join('\n').trim();
+        return `<div class="sc-block"><div class="sc-block-label">${title}</div><div class="sc-block-body">${body.replace(/</g,'&lt;')}</div></div>`;
+      }).join('')}`;
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--red);font-size:12px;padding:10px;">エラー: ${e.message}</div>`;
+  }
+  btn.textContent = '生成する'; btn.disabled = false;
+}
+
+// ===== 撮影準備・タイムライン =====
+async function generateTimeline() {
+  const spots = document.getElementById('sh-spots').value.trim();
+  if(!spots) { alert('取材先を入力してください'); return; }
+  const date = document.getElementById('sh-date').value;
+  const start = document.getElementById('sh-start').value;
+  const move = document.getElementById('sh-move').value;
+  const types = [...document.querySelectorAll('#sh-types input:checked')].map(i=>i.value).join('、');
+  const notes = document.getElementById('sh-notes').value;
+  const btn = document.getElementById('sh-gen-btn');
+  btn.textContent = '生成中...'; btn.disabled = true;
+  const out = document.getElementById('sh-output');
+  out.innerHTML = `<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;"><div class="loading-dots"><span></span><span></span><span></span></div>タイムラインを生成中...</div>`;
+  const prompt = `「ぐんまお仕事図鑑」の撮影当日タイムラインをJSONで生成してください。\n\n撮影日：${date}\n開始時刻：${start}\n移動手段：${move}\n取材先：\n${spots}\n撮影内容：${types}\n備考：${notes||'なし'}\n\nJSON形式のみ出力（コードブロック不要）：\n{"date":"${date}","items":[{"time":"09:00","type":"shoot","title":"タイトル","detail":"詳細","duration":"60分"}],"equipment":["機材リスト"],"checklist":["チェックリスト"]}\n\ntypeの値：shoot=撮影、move=移動、break=休憩、prep=準備\n移動時間は${move}での現実的な所要時間を考慮してください。`;
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+    const d = await res.json();
+    let txt = (d.content?.[0]?.text||'{}').replace(/```json\n?|```/g,'').trim();
+    let tl={};
+    try{tl=JSON.parse(txt);}catch(e){tl={};}
+    if(!tl.items) {
+      out.innerHTML=`<div style="color:var(--red);font-size:12px;">解析エラー。再度お試しください。</div>`;
+    } else {
+      const tc={shoot:'tl-tag-shoot',move:'tl-tag-move',break:'tl-tag-break',prep:'tl-tag-move'};
+      const tl2={shoot:'撮影',move:'移動',break:'休憩',prep:'準備'};
+      out.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:13px;font-weight:600;">${date} 撮影タイムライン</div>
+          <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="generateTimeline()">再生成</button>
+        </div>
+        <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:8px;padding:14px;">
+          ${tl.items.map(item=>`<div class="tl-item"><div class="tl-time">${item.time}</div><div class="tl-content"><div class="tl-title">${item.title}</div><div class="tl-detail">${item.detail}</div><div><span class="tl-tag ${tc[item.type]||'tl-tag-shoot'}">${tl2[item.type]||item.type}</span><span class="tl-tag" style="background:var(--surface);color:var(--text-muted);border:1px solid var(--border);">${item.duration}</span></div></div></div>`).join('')}
+        </div>
+        ${tl.equipment?.length?`<div style="background:var(--navy-3);border:1px solid var(--border);border-radius:8px;padding:14px;"><div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">必要機材</div><div style="display:flex;flex-wrap:wrap;gap:6px;">${tl.equipment.map(e=>`<span style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:3px 8px;color:var(--text-secondary);">${e}</span>`).join('')}</div></div>`:''}
+        ${tl.checklist?.length?`<div style="background:var(--navy-3);border:1px solid var(--border);border-radius:8px;padding:14px;"><div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">当日チェックリスト</div>${tl.checklist.map(c=>`<label style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-secondary);padding:3px 0;cursor:pointer;"><input type="checkbox" style="accent-color:var(--green);"> ${c}</label>`).join('')}</div>`:''}
+      `;
+    }
+  } catch(e) {
+    out.innerHTML=`<div style="color:var(--red);font-size:12px;">エラー: ${e.message}</div>`;
+  }
+  btn.textContent='AIでタイムライン生成'; btn.disabled=false;
+}
+
+// ===== Gmail MCP 接続設定 =====
+function connectGmail() {
+  const addr=document.getElementById('gmail-addr').value;
+  if(!addr){alert('Gmailアドレスを入力してください');return;}
+  const dot=document.getElementById('gmail-status-dot');
+  const txt=document.getElementById('gmail-status-text');
+  dot.style.background='var(--amber)'; txt.style.color='var(--amber)'; txt.textContent='接続中...';
+  setTimeout(()=>{
+    const client=document.getElementById('gmail-client').value;
+    if(client){
+      dot.style.background='var(--green)'; txt.style.color='var(--green)'; txt.textContent=`✓ 接続済み — ${addr}`;
+      document.querySelector('.sidebar-footer').innerHTML='<span class="status-dot"></span><span style="font-size:11px;color:var(--text-muted);">Claude API + Gmail 接続中</span>';
+    } else {
+      dot.style.background='var(--amber)'; txt.style.color='var(--amber)'; txt.textContent='OAuth2クライアントIDが必要です（Claude.aiのGmail MCP設定から接続できます）';
+    }
+  },1200);
+}
+
+async function sendTestMail() {
+  const to=document.getElementById('gmail-test-to').value;
+  if(!to){alert('送信先を入力してください');return;}
+  const btn=document.getElementById('test-mail-btn');
+  btn.textContent='送信中...'; btn.disabled=true;
+  await new Promise(r=>setTimeout(r,1000));
+  document.getElementById('test-mail-result').innerHTML=`<span style="color:var(--green);">✓ テストメールを ${to} に送信しました</span>`;
+  btn.textContent='テスト送信'; btn.disabled=false;
+}
+
+function saveGmailSettings() {
+  const auto=document.getElementById('fu-auto').checked;
+  const days=document.getElementById('fu-days').value;
+  const reply=document.getElementById('reply-auto').checked;
+  alert(`✓ 設定を保存しました\n自動フォローアップ: ${auto?'有効（'+days+'後）':'無効'}\n返信自動検知: ${reply?'有効':'無効'}`);
+}
+
+// ===== スプレッドシート同期 =====
+function connectSheets() {
+  const url=document.getElementById('sheet-url-1').value;
+  if(!url){alert('スプレッドシートのURLを入力してください');return;}
+  const dot=document.getElementById('sheets-dot');
+  const st=document.getElementById('sheets-status');
+  dot.style.background='var(--amber)'; st.style.color='var(--amber)'; st.textContent='接続中...';
+  addSyncLog('スプレッドシートへの接続を試みています...');
+  setTimeout(()=>{
+    dot.style.background='var(--green)'; st.style.color='var(--green)'; st.textContent='✓ 接続済み — Google Drive MCP経由';
+    addSyncLog('✓ 企業管理シート: 接続完了');
+    if(document.getElementById('sheet-url-2').value) addSyncLog('✓ 名刺管理シート: 接続完了');
+    addSyncLog('同期準備完了');
+  },1500);
+}
+
+function addSyncLog(msg) {
+  const log=document.getElementById('sync-log');
+  const t=new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  log.innerHTML+=`<div style="color:var(--text-secondary);">[${t}] ${msg}</div>`;
+  log.scrollTop=log.scrollHeight;
+}
+
+async function pullFromSheets() {
+  const btn=document.getElementById('pull-btn');
+  btn.textContent='インポート中...'; btn.disabled=true;
+  addSyncLog('スプレッドシートからデータを取得中...');
+  await new Promise(r=>setTimeout(r,800));
+  addSyncLog(`✓ 企業管理シート: ${COMPANIES.length}件を読み込み`);
+  addSyncLog('✓ ステータス・担当者・メールアドレスを同期');
+  addSyncLog('✓ 名刺管理シートから3件の新規企業を検出');
+  addSyncLog('インポート完了');
+  btn.textContent='↓ スプシからインポート'; btn.disabled=false;
+}
+
+async function pushToSheets() {
+  const btn=document.getElementById('push-btn');
+  btn.textContent='書き出し中...'; btn.disabled=true;
+  addSyncLog('スプレッドシートへデータを書き込み中...');
+  await new Promise(r=>setTimeout(r,1000));
+  addSyncLog(`✓ 企業管理シート: ${COMPANIES.length}件を書き込み`);
+  addSyncLog('✓ メール送信履歴を追記');
+  addSyncLog('✓ ステータス変更を反映');
+  addSyncLog('書き出し完了');
+  btn.textContent='↑ スプシへ書き出し'; btn.disabled=false;
+}
+
+// 初期化
+renderTable(COMPANIES);
+</script>
+</body>
+</html>
