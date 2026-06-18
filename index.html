@@ -1082,7 +1082,7 @@ function renderInboxList(items,{cachedCount,newCount,excludedCount}) {
     <span>関連: <strong id="inbox-stat-related" style="color:var(--text-primary);">${items.length}件</strong></span>
     <span style="color:${cachedCount>0?'var(--green)':'var(--text-muted)'};">保存済み: <span id="inbox-stat-cached">${cachedCount}</span>件</span>
     <span style="color:${newCount>0?'var(--accent)':'var(--text-muted)'};">今回新規: <span id="inbox-stat-new">${newCount}</span>件</span>
-    <span id="inbox-stat-excluded-wrap" style="${excludedCount>0?'':'display:none';}">除外: <span id="inbox-stat-excluded">${excludedCount}</span>件</span>
+    <span id="inbox-stat-excluded-wrap" style="${excludedCount>0?'':'display:none'}">除外: <span id="inbox-stat-excluded">${excludedCount}</span>件</span>
   </div>`;
   const cardsHtml=items.length===0
     ?'<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">ぐんまお仕事図鑑に関連するメールが見つかりませんでした</div>'
