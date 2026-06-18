@@ -962,7 +962,10 @@ function mailCardHtml(m,i) {
 async function processMsgIds(msgIds, onProgress) {
   const cache=loadInboxCache();
   const cacheMap=new Map(cache.map(m=>[m.id,m]));
-  const cachedItems=msgIds.filter(id=>cacheMap.has(id)).map(id=>cacheMap.get(id));
+  const cachedItems=msgIds
+    .filter(id=>cacheMap.has(id))
+    .map(id=>cacheMap.get(id))
+    .filter(m=>isRelevantMail(m.from,m.subject,m.body));
   const newIds=msgIds.filter(id=>!cacheMap.has(id));
   if(!newIds.length) return {results:cachedItems,cachedCount:cachedItems.length,newCount:0,excludedCount:0};
   if(onProgress) onProgress(`新規${newIds.length}件の詳細を取得中...`);
@@ -1075,11 +1078,11 @@ async function analyzeInbox() {
 
 function renderInboxList(items,{cachedCount,newCount,excludedCount}) {
   const el=document.getElementById('inbox-content');
-  const statsHtml=`<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;display:flex;gap:14px;flex-wrap:wrap;">
-    <span>関連: <strong style="color:var(--text-primary);">${items.length}件</strong></span>
-    <span style="color:${cachedCount>0?'var(--green)':'var(--text-muted)'};">保存済み: ${cachedCount}件</span>
-    <span style="color:${newCount>0?'var(--accent)':'var(--text-muted)'};">今回新規: ${newCount}件</span>
-    ${excludedCount>0?`<span>除外: ${excludedCount}件</span>`:''}
+  const statsHtml=`<div id="inbox-stats" data-excluded="${excludedCount}" data-cached="${cachedCount}" data-new="${newCount}" style="font-size:11px;color:var(--text-muted);margin-bottom:8px;display:flex;gap:14px;flex-wrap:wrap;">
+    <span>関連: <strong id="inbox-stat-related" style="color:var(--text-primary);">${items.length}件</strong></span>
+    <span style="color:${cachedCount>0?'var(--green)':'var(--text-muted)'};">保存済み: <span id="inbox-stat-cached">${cachedCount}</span>件</span>
+    <span style="color:${newCount>0?'var(--accent)':'var(--text-muted)'};">今回新規: <span id="inbox-stat-new">${newCount}</span>件</span>
+    <span id="inbox-stat-excluded-wrap" style="${excludedCount>0?'':'display:none';}">除外: <span id="inbox-stat-excluded">${excludedCount}</span>件</span>
   </div>`;
   const cardsHtml=items.length===0
     ?'<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">ぐんまお仕事図鑑に関連するメールが見つかりませんでした</div>'
@@ -1102,10 +1105,30 @@ async function loadMoreInbox() {
       return;
     }
     const startIdx=currentInboxData.length;
-    const {results}=await processMsgIds(messages.map(m=>m.id));
+    const {results,cachedCount,newCount,excludedCount}=await processMsgIds(messages.map(m=>m.id));
     currentInboxData=[...currentInboxData,...results];
     const loadMoreArea=document.getElementById('load-more-area');
     if(loadMoreArea) loadMoreArea.insertAdjacentHTML('beforebegin',results.map((m,j)=>mailCardHtml(m,startIdx+j)).join(''));
+    // 上部の統計を累計で更新
+    const statsEl=document.getElementById('inbox-stats');
+    if(statsEl) {
+      const totalExcluded=(parseInt(statsEl.dataset.excluded)||0)+excludedCount;
+      const totalCached=(parseInt(statsEl.dataset.cached)||0)+cachedCount;
+      const totalNew=(parseInt(statsEl.dataset.new)||0)+newCount;
+      statsEl.dataset.excluded=totalExcluded;
+      statsEl.dataset.cached=totalCached;
+      statsEl.dataset.new=totalNew;
+      const relEl=document.getElementById('inbox-stat-related');
+      const cachedEl=document.getElementById('inbox-stat-cached');
+      const newEl=document.getElementById('inbox-stat-new');
+      const exEl=document.getElementById('inbox-stat-excluded');
+      const exWrap=document.getElementById('inbox-stat-excluded-wrap');
+      if(relEl) relEl.textContent=currentInboxData.length+'件';
+      if(cachedEl) cachedEl.textContent=totalCached;
+      if(newEl) newEl.textContent=totalNew;
+      if(exEl) exEl.textContent=totalExcluded;
+      if(exWrap) exWrap.style.display=totalExcluded>0?'':'none';
+    }
     if(nextPageToken) {
       btn.textContent='次の50件を読み込む'; btn.disabled=false;
     } else {
