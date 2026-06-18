@@ -903,6 +903,20 @@ async function generateAllFollowups() {
   btn.style.background='var(--green)'; btn.disabled=false;
 }
 
+// 受信メール 関連性フィルタ（コード側で厳密判定）
+function isRelevantMail(from, subject, body) {
+  const fromEmail = (from.match(/<([^>]+)>/) || [,''])[1]?.toLowerCase() || '';
+  const text = subject + ' ' + body;
+  // 条件①：送信元アドレスが企業リストのemailと一致
+  if (fromEmail && COMPANIES.some(c => c.email && fromEmail === c.email.toLowerCase())) return true;
+  // 条件②：件名または本文に「ぐんまお仕事図鑑」を含む
+  if (text.includes('ぐんまお仕事図鑑')) return true;
+  // 条件③：企業リストの企業名を含む かつ キーワードを含む
+  const keyTerms = ['取材', '撮影', 'インタビュー', '採用'];
+  if (keyTerms.some(k => text.includes(k)) && COMPANIES.some(c => c.name && text.includes(c.name))) return true;
+  return false;
+}
+
 // 受信解析 — Gmail OAuth経由で実メールを取得
 async function analyzeInbox() {
   const btn=document.getElementById('inbox-btn');
@@ -937,30 +951,39 @@ async function analyzeInbox() {
     el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>${msgList.length}件を取得中...</div>`;
     const details=await Promise.all(msgList.slice(0,10).map(m=>fetchGmailMessage(m.id)));
 
-    el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>Claude でメールを解析中...</div>`;
+    // コード側で厳密フィルタ（AI解析より先に実行）
+    const filteredDetails=details.filter(msg=>{
+      const from=getGmailHeader(msg,'from');
+      const subject=getGmailHeader(msg,'subject');
+      const body=getGmailBody(msg);
+      return isRelevantMail(from,subject,body);
+    });
+    const excludedCount=details.length-filteredDetails.length;
 
-    const analyzed=await Promise.all(details.map(async(msg)=>{
+    if(!filteredDetails.length){
+      el.innerHTML='<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">ぐんまお仕事図鑑に関連するメールが見つかりませんでした</div>'
+        +(excludedCount>0?`<div style="text-align:center;padding:14px 0 4px;font-size:11px;color:var(--text-muted);">除外したメール: ${excludedCount}件</div>`:'');
+      btn.textContent='再取得'; btn.disabled=false;
+      return;
+    }
+
+    el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>Claude でメールを解析中... (${filteredDetails.length}件)</div>`;
+
+    const analyzed=await Promise.all(filteredDetails.map(async(msg)=>{
       const from=getGmailHeader(msg,'from');
       const subject=getGmailHeader(msg,'subject');
       const date=getGmailHeader(msg,'date');
       const body=getGmailBody(msg);
       const company=from.replace(/<[^>]+>/g,'').replace(/"/g,'').trim()||'不明';
 
-      let ext={relevant:true,result:'未分類',date:'未定',loc:'未定',contact:company,note:''};
+      let ext={result:'未分類',date:'未定',loc:'未定',contact:company,note:''};
       try {
-        const companyContext=COMPANIES.slice(0,15).map(c=>`${c.name}${c.email?'('+c.email+')':''}`).join('、');
         const prompt=`以下のメールを解析してJSONのみ返答（コードブロック不要）。
-
-このメールが「ぐんまお仕事図鑑」（群馬の若者向け就活SNSメディア）への取材依頼・企業アプローチに関連するか判定してください。
-関連条件：件名や本文に「取材」「ぐんまお仕事図鑑」「採用」「インタビュー」「掲載」「撮影」等がある、または送信者が既知企業（${companyContext}）の担当者である。
-上記に該当しない無関係なメール（広告・スパム・個人的な連絡等）はrelevant:falseにしてください。
-
-{"relevant":true,"result":"承諾/前向き/保留/NG/問い合わせ等","date":"候補日時（なければ未定）","loc":"場所（なければ未定）","contact":"担当者名","note":"特記事項1文"}
-
+{"result":"承諾/前向き/保留/NG/問い合わせ等","date":"候補日時（なければ未定）","loc":"場所（なければ未定）","contact":"担当者名","note":"特記事項1文"}
 送信者:${from}
 件名:${subject}
 本文:${body.slice(0,400)}`;
-        const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,messages:[{role:"user",content:prompt}]})});
+        const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}]})});
         const d=await r.json();
         const text=(d.content?.[0]?.text||'{}').replace(/```json\n?|```/g,'').trim();
         ext={...ext,...JSON.parse(text)};
@@ -969,12 +992,9 @@ async function analyzeInbox() {
       return {id:msg.id,from,company,subject,when:formatGmailDate(date),body:body.slice(0,800),ext};
     }));
 
-    const relevant=analyzed.filter(m=>m.ext.relevant!==false);
-    const excludedCount=analyzed.length-relevant.length;
-    currentInboxData=relevant;
-    el.innerHTML=`<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${relevant.length}件の関連メールを検出しました（${gmailUser}）${excludedCount>0?' / '+analyzed.length+'件取得':''}</div>`+
-    (relevant.length===0?'<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">ぐんまお仕事図鑑に関連するメールが見つかりませんでした</div>':
-    relevant.map((m,i)=>`
+    currentInboxData=analyzed;
+    el.innerHTML=`<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${analyzed.length}件の関連メールを検出しました（${gmailUser}）${excludedCount>0?' / 取得'+details.length+'件中':''}</div>`+
+    analyzed.map((m,i)=>`
       <div class="inbox-card" id="ic-${i}">
         <div class="inbox-header">
           <div style="flex:1;">
@@ -998,8 +1018,8 @@ async function analyzeInbox() {
           <button class="btn" style="font-size:11px;" onclick="genReply(${i})" id="reply-btn-${i}">返信文を生成</button>
         </div>
         <div id="reply-area-${i}"></div>
-      </div>`).join(''))
-    +(excludedCount>0?`<div style="text-align:center;padding:14px 0 4px;font-size:11px;color:var(--text-muted);">除外したメール: ${excludedCount}件</div>`:'' );
+      </div>`).join('')
+    +(excludedCount>0?`<div style="text-align:center;padding:14px 0 4px;font-size:11px;color:var(--text-muted);">除外したメール: ${excludedCount}件</div>`:'');
   } catch(e) {
     if(e.message==='認証期限切れ') {
       el.innerHTML=`<div style="text-align:center;padding:40px 0;"><div style="color:var(--amber);font-size:12px;margin-bottom:12px;">認証トークンが期限切れです</div><button class="btn btn-primary" onclick="setView('gmail-setup')">再認証する</button></div>`;
