@@ -324,8 +324,10 @@
   <div id="view-inbox" class="view">
     <div class="topbar">
       <span class="topbar-title">受信メール解析・案件自動登録</span>
+      <span id="inbox-cache-info" style="font-size:11px;color:var(--text-muted);margin-left:8px;"></span>
       <div class="spacer"></div>
       <input type="text" id="inbox-query" class="form-input" value="in:inbox" placeholder="Gmail検索クエリ（例: subject:取材）" style="width:240px;font-size:11px;">
+      <button class="btn" onclick="clearInboxCache()">キャッシュリセット</button>
       <button class="btn btn-primary" id="inbox-btn" onclick="analyzeInbox()">Gmailを取得して解析</button>
     </div>
     <div class="inbox-content" id="inbox-content">
@@ -644,6 +646,9 @@ let composeCos = [];
 let activeIdx = 0;
 let genMails = {};
 let currentInboxData = [];
+const INBOX_CACHE_KEY = 'gunma_inbox_v1';
+let inboxNextPageToken = null;
+let inboxCurrentQuery = 'in:inbox';
 
 function setView(v) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -653,6 +658,7 @@ function setView(v) {
   document.querySelectorAll('.nav-item')[map[v]]?.classList.add('active');
   closePanel();
   if(v==='followup') renderFollowups();
+  if(v==='inbox') updateCacheInfoDisplay();
   if(v==='shooting') { const d=new Date(); document.getElementById('sh-date').value=d.toISOString().split('T')[0]; }
 }
 
@@ -903,6 +909,97 @@ async function generateAllFollowups() {
   btn.style.background='var(--green)'; btn.disabled=false;
 }
 
+// ===== 受信解析 キャッシュ（localStorage） =====
+function loadInboxCache() {
+  try { return JSON.parse(localStorage.getItem(INBOX_CACHE_KEY)||'[]'); } catch { return []; }
+}
+function saveToInboxCache(items) {
+  const cache=loadInboxCache();
+  const map=new Map(cache.map(m=>[m.id,m]));
+  items.forEach(m=>map.set(m.id,m));
+  try { localStorage.setItem(INBOX_CACHE_KEY,JSON.stringify([...map.values()])); } catch {}
+}
+function clearInboxCache() {
+  localStorage.removeItem(INBOX_CACHE_KEY);
+  document.getElementById('inbox-content').innerHTML='<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">キャッシュをリセットしました</div>';
+  updateCacheInfoDisplay();
+}
+function updateCacheInfoDisplay() {
+  const el=document.getElementById('inbox-cache-info');
+  if(el) el.textContent=`保存済み: ${loadInboxCache().length}件`;
+}
+
+// メール1件をカードHTMLに変換
+function mailCardHtml(m,i) {
+  return `
+    <div class="inbox-card" id="ic-${i}">
+      <div class="inbox-header">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:500;">${m.company}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${m.from.slice(0,60)} · ${m.when}</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${m.subject}</div>
+        </div>
+        <span class="tag ${m.ext.result.includes('承諾')?'tag-done':m.ext.result.includes('前向き')?'tag-approach':'tag-second'}">${m.ext.result}</span>
+      </div>
+      <div style="padding:8px 14px 0;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border);line-height:1.6;padding-bottom:8px;">${m.body.slice(0,120).replace(/</g,'&lt;')}...</div>
+      <div style="padding:10px 14px;display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">自動抽出情報</div>
+        <div class="ext-row"><span class="ext-key">返信内容</span><span class="ext-val" style="color:${m.ext.result.includes('承諾')?'var(--green)':m.ext.result.includes('前向き')?'var(--accent)':'var(--amber)'};">${m.ext.result}</span></div>
+        <div class="ext-row"><span class="ext-key">候補日時</span><span class="ext-val" style="color:var(--amber);">${m.ext.date}</span></div>
+        <div class="ext-row"><span class="ext-key">場所</span><span class="ext-val">${m.ext.loc}</span></div>
+        <div class="ext-row"><span class="ext-key">担当者</span><span class="ext-val">${m.ext.contact}</span></div>
+        <div class="ext-row"><span class="ext-key">メモ</span><span class="ext-val" style="color:var(--text-muted);">${m.ext.note}</span></div>
+      </div>
+      <div style="padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:6px;">
+        <button class="btn btn-primary" style="font-size:11px;" onclick="addCalendar(${i})">カレンダーに追加</button>
+        <button class="btn" style="font-size:11px;" onclick="genReply(${i})" id="reply-btn-${i}">返信文を生成</button>
+      </div>
+      <div id="reply-area-${i}"></div>
+    </div>`;
+}
+
+// メッセージIDリストを処理（キャッシュ確認 → フィルタ → AI解析）
+async function processMsgIds(msgIds, onProgress) {
+  const cache=loadInboxCache();
+  const cacheMap=new Map(cache.map(m=>[m.id,m]));
+  const cachedItems=msgIds.filter(id=>cacheMap.has(id)).map(id=>cacheMap.get(id));
+  const newIds=msgIds.filter(id=>!cacheMap.has(id));
+  if(!newIds.length) return {results:cachedItems,cachedCount:cachedItems.length,newCount:0,excludedCount:0};
+  if(onProgress) onProgress(`新規${newIds.length}件の詳細を取得中...`);
+  const details=await Promise.all(newIds.map(id=>fetchGmailMessage(id)));
+  const filteredDetails=details.filter(msg=>{
+    const from=getGmailHeader(msg,'from');
+    const subject=getGmailHeader(msg,'subject');
+    const body=getGmailBody(msg);
+    return isRelevantMail(from,subject,body);
+  });
+  const excludedCount=details.length-filteredDetails.length;
+  if(filteredDetails.length&&onProgress) onProgress(`関連${filteredDetails.length}件をAI解析中...`);
+  const analyzed=await Promise.all(filteredDetails.map(async msg=>{
+    const from=getGmailHeader(msg,'from');
+    const subject=getGmailHeader(msg,'subject');
+    const date=getGmailHeader(msg,'date');
+    const body=getGmailBody(msg);
+    const company=from.replace(/<[^>]+>/g,'').replace(/"/g,'').trim()||'不明';
+    let ext={result:'未分類',date:'未定',loc:'未定',contact:company,note:''};
+    try {
+      const prompt=`以下のメールを解析してJSONのみ返答（コードブロック不要）。
+{"result":"承諾/前向き/保留/NG/問い合わせ等","date":"候補日時（なければ未定）","loc":"場所（なければ未定）","contact":"担当者名","note":"特記事項1文"}
+送信者:${from}
+件名:${subject}
+本文:${body.slice(0,400)}`;
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}]})});
+      const d=await r.json();
+      const text=(d.content?.[0]?.text||'{}').replace(/```json\n?|```/g,'').trim();
+      ext={...ext,...JSON.parse(text)};
+    }catch{}
+    return {id:msg.id,from,company,subject,when:formatGmailDate(date),body:body.slice(0,800),ext};
+  }));
+  saveToInboxCache(analyzed);
+  updateCacheInfoDisplay();
+  return {results:[...cachedItems,...analyzed],cachedCount:cachedItems.length,newCount:analyzed.length,excludedCount};
+}
+
 // 受信メール 関連性フィルタ（コード側で厳密判定）
 function isRelevantMail(from, subject, body) {
   const fromEmail = (from.match(/<([^>]+)>/) || [,''])[1]?.toLowerCase() || '';
@@ -946,88 +1043,26 @@ async function analyzeInbox() {
   }
 
   const query=document.getElementById('inbox-query')?.value||'in:inbox';
+  inboxCurrentQuery=query;
+  inboxNextPageToken=null;
+  currentInboxData=[];
   el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:20px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>Gmailから受信メールを取得中... (${query})</div>`;
 
   try {
-    const msgList=await fetchGmailList(query,15);
-    if(!msgList.length) {
+    const {messages,nextPageToken}=await fetchGmailList(query,50);
+    inboxNextPageToken=nextPageToken;
+    if(!messages.length) {
       el.innerHTML='<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">条件に一致するメールが見つかりませんでした<br><span style="font-size:11px;">検索クエリを変更してお試しください</span></div>';
       btn.textContent='再取得'; btn.disabled=false;
       return;
     }
-
-    el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>${msgList.length}件を取得中...</div>`;
-    const details=await Promise.all(msgList.slice(0,10).map(m=>fetchGmailMessage(m.id)));
-
-    // コード側で厳密フィルタ（AI解析より先に実行）
-    const filteredDetails=details.filter(msg=>{
-      const from=getGmailHeader(msg,'from');
-      const subject=getGmailHeader(msg,'subject');
-      const body=getGmailBody(msg);
-      return isRelevantMail(from,subject,body);
-    });
-    const excludedCount=details.length-filteredDetails.length;
-
-    if(!filteredDetails.length){
-      el.innerHTML='<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">ぐんまお仕事図鑑に関連するメールが見つかりませんでした</div>'
-        +(excludedCount>0?`<div style="text-align:center;padding:14px 0 4px;font-size:11px;color:var(--text-muted);">除外したメール: ${excludedCount}件</div>`:'');
-      btn.textContent='再取得'; btn.disabled=false;
-      return;
-    }
-
-    el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>Claude でメールを解析中... (${filteredDetails.length}件)</div>`;
-
-    const analyzed=await Promise.all(filteredDetails.map(async(msg)=>{
-      const from=getGmailHeader(msg,'from');
-      const subject=getGmailHeader(msg,'subject');
-      const date=getGmailHeader(msg,'date');
-      const body=getGmailBody(msg);
-      const company=from.replace(/<[^>]+>/g,'').replace(/"/g,'').trim()||'不明';
-
-      let ext={result:'未分類',date:'未定',loc:'未定',contact:company,note:''};
-      try {
-        const prompt=`以下のメールを解析してJSONのみ返答（コードブロック不要）。
-{"result":"承諾/前向き/保留/NG/問い合わせ等","date":"候補日時（なければ未定）","loc":"場所（なければ未定）","contact":"担当者名","note":"特記事項1文"}
-送信者:${from}
-件名:${subject}
-本文:${body.slice(0,400)}`;
-        const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}]})});
-        const d=await r.json();
-        const text=(d.content?.[0]?.text||'{}').replace(/```json\n?|```/g,'').trim();
-        ext={...ext,...JSON.parse(text)};
-      }catch(e){}
-
-      return {id:msg.id,from,company,subject,when:formatGmailDate(date),body:body.slice(0,800),ext};
-    }));
-
-    currentInboxData=analyzed;
-    el.innerHTML=`<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${analyzed.length}件の関連メールを検出しました（${gmailUser}）${excludedCount>0?' / 取得'+details.length+'件中':''}</div>`+
-    analyzed.map((m,i)=>`
-      <div class="inbox-card" id="ic-${i}">
-        <div class="inbox-header">
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:500;">${m.company}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${m.from.slice(0,60)} · ${m.when}</div>
-            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${m.subject}</div>
-          </div>
-          <span class="tag ${m.ext.result.includes('承諾')?'tag-done':m.ext.result.includes('前向き')?'tag-approach':'tag-second'}">${m.ext.result}</span>
-        </div>
-        <div style="padding:8px 14px 0;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border);line-height:1.6;padding-bottom:8px;">${m.body.slice(0,120).replace(/</g,'&lt;')}...</div>
-        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:4px;">
-          <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">自動抽出情報</div>
-          <div class="ext-row"><span class="ext-key">返信内容</span><span class="ext-val" style="color:${m.ext.result.includes('承諾')?'var(--green)':m.ext.result.includes('前向き')?'var(--accent)':'var(--amber)'};">${m.ext.result}</span></div>
-          <div class="ext-row"><span class="ext-key">候補日時</span><span class="ext-val" style="color:var(--amber);">${m.ext.date}</span></div>
-          <div class="ext-row"><span class="ext-key">場所</span><span class="ext-val">${m.ext.loc}</span></div>
-          <div class="ext-row"><span class="ext-key">担当者</span><span class="ext-val">${m.ext.contact}</span></div>
-          <div class="ext-row"><span class="ext-key">メモ</span><span class="ext-val" style="color:var(--text-muted);">${m.ext.note}</span></div>
-        </div>
-        <div style="padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:6px;">
-          <button class="btn btn-primary" style="font-size:11px;" onclick="addCalendar(${i})">カレンダーに追加</button>
-          <button class="btn" style="font-size:11px;" onclick="genReply(${i})" id="reply-btn-${i}">返信文を生成</button>
-        </div>
-        <div id="reply-area-${i}"></div>
-      </div>`).join('')
-    +(excludedCount>0?`<div style="text-align:center;padding:14px 0 4px;font-size:11px;color:var(--text-muted);">除外したメール: ${excludedCount}件</div>`:'');
+    el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>${messages.length}件を処理中...</div>`;
+    const {results,cachedCount,newCount,excludedCount}=await processMsgIds(
+      messages.map(m=>m.id),
+      msg=>{el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>${msg}</div>`;}
+    );
+    currentInboxData=results;
+    renderInboxList(results,{cachedCount,newCount,excludedCount});
   } catch(e) {
     if(e.message==='認証期限切れ') {
       el.innerHTML=`<div style="text-align:center;padding:40px 0;"><div style="color:var(--amber);font-size:12px;margin-bottom:12px;">認証トークンが期限切れです</div><button class="btn btn-primary" onclick="setView('gmail-setup')">再認証する</button></div>`;
@@ -1036,6 +1071,50 @@ async function analyzeInbox() {
     }
   }
   btn.textContent='再取得'; btn.disabled=false;
+}
+
+function renderInboxList(items,{cachedCount,newCount,excludedCount}) {
+  const el=document.getElementById('inbox-content');
+  const statsHtml=`<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;display:flex;gap:14px;flex-wrap:wrap;">
+    <span>関連: <strong style="color:var(--text-primary);">${items.length}件</strong></span>
+    <span style="color:${cachedCount>0?'var(--green)':'var(--text-muted)'};">保存済み: ${cachedCount}件</span>
+    <span style="color:${newCount>0?'var(--accent)':'var(--text-muted)'};">今回新規: ${newCount}件</span>
+    ${excludedCount>0?`<span>除外: ${excludedCount}件</span>`:''}
+  </div>`;
+  const cardsHtml=items.length===0
+    ?'<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">ぐんまお仕事図鑑に関連するメールが見つかりませんでした</div>'
+    :items.map((m,i)=>mailCardHtml(m,i)).join('');
+  const paginationHtml=inboxNextPageToken
+    ?`<div id="load-more-area" style="text-align:center;padding:16px 0;"><button class="btn" id="load-more-btn" onclick="loadMoreInbox()">次の50件を読み込む</button></div>`
+    :'';
+  el.innerHTML=statsHtml+cardsHtml+paginationHtml;
+}
+
+async function loadMoreInbox() {
+  if(!inboxNextPageToken) return;
+  const btn=document.getElementById('load-more-btn');
+  btn.textContent='読み込み中...'; btn.disabled=true;
+  try {
+    const {messages,nextPageToken}=await fetchGmailList(inboxCurrentQuery,50,inboxNextPageToken);
+    inboxNextPageToken=nextPageToken;
+    if(!messages.length) {
+      document.getElementById('load-more-area').innerHTML='<div style="text-align:center;padding:10px;font-size:11px;color:var(--text-muted);">すべて読み込み完了</div>';
+      return;
+    }
+    const startIdx=currentInboxData.length;
+    const {results}=await processMsgIds(messages.map(m=>m.id));
+    currentInboxData=[...currentInboxData,...results];
+    const loadMoreArea=document.getElementById('load-more-area');
+    if(loadMoreArea) loadMoreArea.insertAdjacentHTML('beforebegin',results.map((m,j)=>mailCardHtml(m,startIdx+j)).join(''));
+    if(nextPageToken) {
+      btn.textContent='次の50件を読み込む'; btn.disabled=false;
+    } else {
+      if(loadMoreArea) loadMoreArea.innerHTML='<div style="text-align:center;padding:10px;font-size:11px;color:var(--text-muted);">すべて読み込み完了</div>';
+    }
+  } catch(e) {
+    const b=document.getElementById('load-more-btn');
+    if(b) { b.textContent='次の50件を読み込む（再試行）'; b.disabled=false; }
+  }
 }
 
 // デモデータ版（Gmail未接続時）
@@ -1347,10 +1426,11 @@ async function gmailApiFetch(endpoint) {
   return res.json();
 }
 
-async function fetchGmailList(query,maxResults=15) {
+async function fetchGmailList(query,maxResults=50,pageToken=null) {
   const params=new URLSearchParams({q:query,maxResults});
+  if(pageToken) params.set('pageToken',pageToken);
   const data=await gmailApiFetch(`users/me/messages?${params}`);
-  return data.messages||[];
+  return {messages:data.messages||[],nextPageToken:data.nextPageToken||null};
 }
 
 async function fetchGmailMessage(id) {
