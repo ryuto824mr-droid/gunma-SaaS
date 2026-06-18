@@ -906,6 +906,14 @@ async function generateAllFollowups() {
 // 受信メール 関連性フィルタ（コード側で厳密判定）
 function isRelevantMail(from, subject, body) {
   const fromEmail = (from.match(/<([^>]+)>/) || [,''])[1]?.toLowerCase() || '';
+  const fromDomain = fromEmail.split('@')[1] || '';
+  // 除外：Googleの自動通知ドメイン（条件より先に判定）
+  const excludedDomains = ['google.com','accounts.google.com','googlemail.com','googleapis.com','no-reply.google.com'];
+  if (excludedDomains.includes(fromDomain)) return false;
+  // 除外：no-reply / noreply 系の大手サービス自動送信
+  const excludedPatterns = [/^no-?reply@(google|youtube|gmail|googlemail|android|chromium)\./];
+  if (excludedPatterns.some(r => r.test(fromEmail))) return false;
+
   const text = subject + ' ' + body;
   // 条件①：送信元アドレスが企業リストのemailと一致
   if (fromEmail && COMPANIES.some(c => c.email && fromEmail === c.email.toLowerCase())) return true;
