@@ -529,36 +529,32 @@
   <div id="view-gmail-setup" class="view">
     <div class="topbar"><span class="topbar-title">Gmail 連携設定</span><div class="spacer"></div></div>
     <div style="flex:1;padding:24px;overflow-y:auto;max-width:640px;">
-      <!-- 接続ステータス -->
+      <!-- 接続済みアカウント一覧 -->
       <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">接続ステータス</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-          <div id="gmail-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--amber);"></div>
-          <span id="gmail-status-text" style="font-size:12px;color:var(--amber);">未接続 — Googleアカウントでログインしてください</span>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">接続アカウント</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">複数のGoogleアカウントからまとめてメールを取得できます</div>
+        <div id="gmail-account-list">
+          <div style="font-size:12px;color:var(--text-muted);padding:10px 0;">アカウントが接続されていません</div>
         </div>
-        <div id="gmail-setup-form">
-          <div style="background:var(--navy-4);border-radius:6px;padding:12px;margin-bottom:14px;font-size:11px;color:var(--text-muted);line-height:1.8;">
-            <div style="font-weight:600;color:var(--text-secondary);margin-bottom:4px;">初回セットアップ手順</div>
-            1. <a href="https://console.cloud.google.com/" target="_blank" style="color:var(--accent);">Google Cloud Console</a> でプロジェクトを作成し Gmail API を有効化<br>
-            2. 「認証情報」→「OAuth 2.0 クライアントID」を作成（種別: ウェブアプリケーション）<br>
-            3. 承認済みJavaScriptオリジンに <code style="background:var(--navy-3);padding:1px 5px;border-radius:3px;">http://localhost</code> または本番ドメインを追加<br>
-            4. 下のフォームにクライアントIDを貼り付けてログイン
-          </div>
-          <div style="margin-bottom:10px;">
-            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Google OAuth2 クライアントID</div>
-            <input type="text" id="gmail-client" class="form-input" placeholder="xxxxxxxxxx.apps.googleusercontent.com" style="width:100%;font-size:11px;">
-            <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Cloud Console → 認証情報 → OAuth 2.0 クライアントID</div>
-          </div>
-          <button class="btn btn-primary" id="gmail-connect-btn" style="width:100%;padding:10px;" onclick="connectGmail()">Googleアカウントでログインして連携</button>
+        <button class="btn btn-primary" style="margin-top:12px;width:100%;" onclick="showAddAccountForm()">＋ アカウントを追加</button>
+      </div>
+      <!-- アカウント追加フォーム -->
+      <div id="gmail-add-form" style="display:none;background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;">アカウントを追加</div>
+        <div style="background:var(--navy-4);border-radius:6px;padding:12px;margin-bottom:14px;font-size:11px;color:var(--text-muted);line-height:1.8;">
+          <div style="font-weight:600;color:var(--text-secondary);margin-bottom:4px;">セットアップ手順</div>
+          1. <a href="https://console.cloud.google.com/" target="_blank" style="color:var(--accent);">Google Cloud Console</a> でプロジェクトを作成し Gmail API を有効化<br>
+          2. 「認証情報」→「OAuth 2.0 クライアントID」を作成（種別: ウェブアプリケーション）<br>
+          3. 承認済みJavaScriptオリジンに <code style="background:var(--navy-3);padding:1px 5px;border-radius:3px;">http://localhost</code> または本番ドメインを追加<br>
+          4. 下のフォームにクライアントIDを貼り付けてログイン
         </div>
-        <div id="gmail-connected-info" style="display:none;background:var(--navy-4);border-radius:6px;padding:10px 12px;margin-top:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div style="font-size:11px;font-weight:500;color:var(--green);" class="gmail-user-email">接続済み</div>
-              <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">スコープ: Gmail 読み取り専用</div>
-            </div>
-            <button class="btn" style="font-size:10px;padding:3px 8px;" onclick="disconnectGmail()">切断</button>
-          </div>
+        <div style="margin-bottom:10px;">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Google OAuth2 クライアントID</div>
+          <input type="text" id="gmail-client" class="form-input" placeholder="xxxxxxxxxx.apps.googleusercontent.com" style="width:100%;font-size:11px;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" style="flex:1;padding:10px;" onclick="addGmailAccount()">Googleアカウントでログインして連携</button>
+          <button class="btn" onclick="hideAddAccountForm()">キャンセル</button>
         </div>
       </div>
       <!-- テスト送信 -->
@@ -717,7 +713,6 @@ let activeIdx = 0;
 let genMails = {};
 let currentInboxData = [];
 const INBOX_CACHE_KEY = 'gunma_inbox_v1';
-let inboxNextPageToken = null;
 let inboxCurrentQuery = 'in:inbox';
 
 function toggleSidebar() {
@@ -1011,11 +1006,14 @@ function updateCacheInfoDisplay() {
 
 // メール1件をカードHTMLに変換
 function mailCardHtml(m,i) {
+  const accountBadge = m.accountEmail
+    ? `<span style="font-size:9px;color:var(--text-muted);background:var(--navy-4);padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:middle;">${m.accountEmail}</span>`
+    : '';
   return `
     <div class="inbox-card" id="ic-${i}">
       <div class="inbox-header">
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:500;">${m.company}</div>
+          <div style="font-size:13px;font-weight:500;">${m.company}${accountBadge}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${m.from.slice(0,60)} · ${m.when}</div>
           <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">${m.subject}</div>
         </div>
@@ -1039,7 +1037,9 @@ function mailCardHtml(m,i) {
 }
 
 // メッセージIDリストを処理（キャッシュ確認 → フィルタ → AI解析）
-async function processMsgIds(msgIds, onProgress) {
+async function processMsgIds(msgIds, onProgress, account=null) {
+  const token = account ? account.token : getFirstToken();
+  const accountEmail = account ? account.email : null;
   const cache=loadInboxCache();
   const cacheMap=new Map(cache.map(m=>[m.id,m]));
   const cachedItems=msgIds
@@ -1049,7 +1049,7 @@ async function processMsgIds(msgIds, onProgress) {
   const newIds=msgIds.filter(id=>!cacheMap.has(id));
   if(!newIds.length) return {results:cachedItems,cachedCount:cachedItems.length,newCount:0,excludedCount:0};
   if(onProgress) onProgress(`新規${newIds.length}件の詳細を取得中...`);
-  const details=await Promise.all(newIds.map(id=>fetchGmailMessage(id)));
+  const details=await Promise.all(newIds.map(id=>fetchGmailMessage(id,token)));
   const filteredDetails=details.filter(msg=>{
     const from=getGmailHeader(msg,'from');
     const subject=getGmailHeader(msg,'subject');
@@ -1076,7 +1076,7 @@ async function processMsgIds(msgIds, onProgress) {
       const text=(d.content?.[0]?.text||'{}').replace(/```json\n?|```/g,'').trim();
       ext={...ext,...JSON.parse(text)};
     }catch{}
-    return {id:msg.id,from,company,subject,when:formatGmailDate(date),body:body.slice(0,800),ext};
+    return {id:msg.id,from,company,subject,when:formatGmailDate(date),body:body.slice(0,800),ext,accountEmail};
   }));
   saveToInboxCache(analyzed);
   updateCacheInfoDisplay();
@@ -1105,13 +1105,14 @@ function isRelevantMail(from, subject, body) {
   return false;
 }
 
-// 受信解析 — Gmail OAuth経由で実メールを取得
+// 受信解析 — 全アカウントから並列取得
 async function analyzeInbox() {
   const btn=document.getElementById('inbox-btn');
   btn.textContent='解析中...'; btn.disabled=true;
   const el=document.getElementById('inbox-content');
+  const active=getActiveAccounts();
 
-  if(!gmailToken) {
+  if(!active.length) {
     el.innerHTML=`<div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:32px;text-align:center;max-width:480px;margin:40px auto;">
       <div style="font-size:36px;margin-bottom:12px;">📧</div>
       <div style="font-size:14px;font-weight:600;margin-bottom:8px;">Gmailに接続されていません</div>
@@ -1127,25 +1128,42 @@ async function analyzeInbox() {
 
   const query=document.getElementById('inbox-query')?.value||'in:inbox';
   inboxCurrentQuery=query;
-  inboxNextPageToken=null;
+  inboxPageTokens={};
   currentInboxData=[];
-  el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:20px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>Gmailから受信メールを取得中... (${query})</div>`;
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:20px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>${active.length}アカウントからメールを取得中... (${query})</div>`;
 
   try {
-    const {messages,nextPageToken}=await fetchGmailList(query,50);
-    inboxNextPageToken=nextPageToken;
-    if(!messages.length) {
+    const fetches=await Promise.all(active.map(a=>fetchGmailList(query,50,null,a.token)));
+    fetches.forEach((f,i)=>{ inboxPageTokens[active[i].email]=f.nextPageToken||null; });
+    const allMsgPairs=fetches.flatMap((f,i)=>f.messages.map(m=>({id:m.id,account:active[i]})));
+
+    if(!allMsgPairs.length) {
       el.innerHTML='<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">条件に一致するメールが見つかりませんでした<br><span style="font-size:11px;">検索クエリを変更してお試しください</span></div>';
       btn.textContent='再取得'; btn.disabled=false;
       return;
     }
-    el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>${messages.length}件を処理中...</div>`;
-    const {results,cachedCount,newCount,excludedCount}=await processMsgIds(
-      messages.map(m=>m.id),
-      msg=>{el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>${msg}</div>`;}
-    );
-    currentInboxData=results;
-    renderInboxList(results,{cachedCount,newCount,excludedCount});
+
+    el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>${allMsgPairs.length}件を処理中...</div>`;
+
+    // アカウントごとにグルーピングして処理
+    const grouped={};
+    allMsgPairs.forEach(({id,account})=>{
+      if(!grouped[account.email]) grouped[account.email]={account,ids:[]};
+      grouped[account.email].ids.push(id);
+    });
+
+    let totalCached=0,totalNew=0,totalExcluded=0,allResults=[];
+    for(const [email,{account,ids}] of Object.entries(grouped)) {
+      const {results,cachedCount,newCount,excludedCount}=await processMsgIds(
+        ids,
+        msg=>{el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:12px;padding:10px 0;"><div class="loading-dots"><span></span><span></span><span></span></div>${email}: ${msg}</div>`;},
+        account
+      );
+      allResults=[...allResults,...results];
+      totalCached+=cachedCount; totalNew+=newCount; totalExcluded+=excludedCount;
+    }
+    currentInboxData=allResults;
+    renderInboxList(allResults,{cachedCount:totalCached,newCount:totalNew,excludedCount:totalExcluded});
   } catch(e) {
     if(e.message==='認証期限切れ') {
       el.innerHTML=`<div style="text-align:center;padding:40px 0;"><div style="color:var(--amber);font-size:12px;margin-bottom:12px;">認証トークンが期限切れです</div><button class="btn btn-primary" onclick="setView('gmail-setup')">再認証する</button></div>`;
@@ -1167,56 +1185,75 @@ function renderInboxList(items,{cachedCount,newCount,excludedCount}) {
   const cardsHtml=items.length===0
     ?'<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">ぐんまお仕事図鑑に関連するメールが見つかりませんでした</div>'
     :items.map((m,i)=>mailCardHtml(m,i)).join('');
-  const paginationHtml=inboxNextPageToken
+  const hasMore=Object.values(inboxPageTokens).some(t=>t);
+  const paginationHtml=hasMore
     ?`<div id="load-more-area" style="text-align:center;padding:16px 0;"><button class="btn" id="load-more-btn" onclick="loadMoreInbox()">次の50件を読み込む</button></div>`
     :'';
   el.innerHTML=statsHtml+cardsHtml+paginationHtml;
 }
 
 async function loadMoreInbox() {
-  if(!inboxNextPageToken) return;
+  const hasMore=Object.values(inboxPageTokens).some(t=>t);
+  if(!hasMore) return;
   const btn=document.getElementById('load-more-btn');
   btn.textContent='読み込み中...'; btn.disabled=true;
   try {
-    const {messages,nextPageToken}=await fetchGmailList(inboxCurrentQuery,50,inboxNextPageToken);
-    inboxNextPageToken=nextPageToken;
-    if(!messages.length) {
+    const active=getActiveAccounts();
+    const accountsWithMore=active.filter(a=>inboxPageTokens[a.email]);
+    const fetches=await Promise.all(accountsWithMore.map(a=>fetchGmailList(inboxCurrentQuery,50,inboxPageTokens[a.email],a.token)));
+    fetches.forEach((f,i)=>{ inboxPageTokens[accountsWithMore[i].email]=f.nextPageToken||null; });
+
+    const allMsgPairs=fetches.flatMap((f,i)=>f.messages.map(m=>({id:m.id,account:accountsWithMore[i]})));
+    if(!allMsgPairs.length) {
       document.getElementById('load-more-area').innerHTML='<div style="text-align:center;padding:10px;font-size:11px;color:var(--text-muted);">すべて読み込み完了</div>';
       return;
     }
+
+    const grouped={};
+    allMsgPairs.forEach(({id,account})=>{
+      if(!grouped[account.email]) grouped[account.email]={account,ids:[]};
+      grouped[account.email].ids.push(id);
+    });
+
     const startIdx=currentInboxData.length;
-    const {results,cachedCount,newCount,excludedCount}=await processMsgIds(messages.map(m=>m.id));
-    currentInboxData=[...currentInboxData,...results];
+    let totalCached=0,totalNew=0,totalExcluded=0,newResults=[];
+    for(const [,{account,ids}] of Object.entries(grouped)) {
+      const {results,cachedCount,newCount,excludedCount}=await processMsgIds(ids,null,account);
+      newResults=[...newResults,...results];
+      totalCached+=cachedCount; totalNew+=newCount; totalExcluded+=excludedCount;
+    }
+    currentInboxData=[...currentInboxData,...newResults];
     const loadMoreArea=document.getElementById('load-more-area');
-    if(loadMoreArea) loadMoreArea.insertAdjacentHTML('beforebegin',results.map((m,j)=>mailCardHtml(m,startIdx+j)).join(''));
-    // 上部の統計を累計で更新
+    if(loadMoreArea) loadMoreArea.insertAdjacentHTML('beforebegin',newResults.map((m,j)=>mailCardHtml(m,startIdx+j)).join(''));
+
     const statsEl=document.getElementById('inbox-stats');
     if(statsEl) {
-      const totalExcluded=(parseInt(statsEl.dataset.excluded)||0)+excludedCount;
-      const totalCached=(parseInt(statsEl.dataset.cached)||0)+cachedCount;
-      const totalNew=(parseInt(statsEl.dataset.new)||0)+newCount;
-      statsEl.dataset.excluded=totalExcluded;
-      statsEl.dataset.cached=totalCached;
-      statsEl.dataset.new=totalNew;
+      const totalExcludedAll=(parseInt(statsEl.dataset.excluded)||0)+totalExcluded;
+      const totalCachedAll=(parseInt(statsEl.dataset.cached)||0)+totalCached;
+      const totalNewAll=(parseInt(statsEl.dataset.new)||0)+totalNew;
+      statsEl.dataset.excluded=totalExcludedAll;
+      statsEl.dataset.cached=totalCachedAll;
+      statsEl.dataset.new=totalNewAll;
       const relEl=document.getElementById('inbox-stat-related');
       const cachedEl=document.getElementById('inbox-stat-cached');
       const newEl=document.getElementById('inbox-stat-new');
       const exEl=document.getElementById('inbox-stat-excluded');
       const exWrap=document.getElementById('inbox-stat-excluded-wrap');
       if(relEl) relEl.textContent=currentInboxData.length+'件';
-      if(cachedEl) cachedEl.textContent=totalCached;
-      if(newEl) newEl.textContent=totalNew;
-      if(exEl) exEl.textContent=totalExcluded;
-      if(exWrap) exWrap.style.display=totalExcluded>0?'':'none';
+      if(cachedEl) cachedEl.textContent=totalCachedAll;
+      if(newEl) newEl.textContent=totalNewAll;
+      if(exEl) exEl.textContent=totalExcludedAll;
+      if(exWrap) exWrap.style.display=totalExcludedAll>0?'':'none';
     }
-    if(nextPageToken) {
+    const stillHasMore=Object.values(inboxPageTokens).some(t=>t);
+    if(stillHasMore) {
       btn.textContent='次の50件を読み込む'; btn.disabled=false;
     } else {
       if(loadMoreArea) loadMoreArea.innerHTML='<div style="text-align:center;padding:10px;font-size:11px;color:var(--text-muted);">すべて読み込み完了</div>';
     }
   } catch(e) {
     const b=document.getElementById('load-more-btn');
-    if(b) { b.textContent='次の50件を読み込む（再試行）'; b.disabled=false; }
+    if(b){b.textContent='次の50件を読み込む（再試行）';b.disabled=false;}
   }
 }
 
@@ -1443,101 +1480,170 @@ async function generateTimeline() {
   btn.textContent='AIでタイムライン生成'; btn.disabled=false;
 }
 
-// ===== Gmail OAuth 連携 =====
-let gmailToken = null;
-let gmailUser = null;
-let tokenClient = null;
+// ===== Gmail OAuth 連携（マルチアカウント対応） =====
+const GMAIL_ACCOUNTS_KEY='gmailAccounts_v2';
+let gmailAccounts=[]; // [{clientId, email, token, tokenExpiry}]
+let inboxPageTokens={}; // {email: nextPageToken}
 
-function connectGmail() {
+function getFirstToken() {
+  const a=gmailAccounts.find(a=>a.token&&Date.now()<a.tokenExpiry-60000);
+  return a?a.token:null;
+}
+
+function getActiveAccounts() {
+  return gmailAccounts.filter(a=>a.token&&Date.now()<a.tokenExpiry-60000);
+}
+
+function loadSavedAccounts() {
+  try{return JSON.parse(localStorage.getItem(GMAIL_ACCOUNTS_KEY)||'[]');}catch{return [];}
+}
+
+function persistAccounts() {
+  localStorage.setItem(GMAIL_ACCOUNTS_KEY,JSON.stringify(
+    gmailAccounts.map(a=>({clientId:a.clientId,email:a.email,token:a.token,tokenExpiry:a.tokenExpiry}))
+  ));
+}
+
+function initGmailAccounts() {
+  gmailAccounts=loadSavedAccounts();
+  renderAccountList();
+  updateSidebarFooter();
+}
+
+function renderAccountList() {
+  const el=document.getElementById('gmail-account-list');
+  if(!el) return;
+  if(!gmailAccounts.length) {
+    el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:10px 0;">アカウントが接続されていません</div>';
+    return;
+  }
+  el.innerHTML=gmailAccounts.map((a,i)=>{
+    const active=a.token&&Date.now()<a.tokenExpiry-60000;
+    const statusColor=active?'var(--green)':'var(--amber)';
+    const statusText=active?'接続中':'期限切れ';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--navy-4);border-radius:6px;margin-bottom:6px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:${statusColor};flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.email||'接続済み'}</div>
+        <div style="font-size:10px;color:${statusColor};margin-top:1px;">${statusText}</div>
+      </div>
+      ${active
+        ?`<button class="btn" style="font-size:10px;padding:3px 8px;flex-shrink:0;" onclick="disconnectAccount(${i})">切断</button>`
+        :`<button class="btn btn-primary" style="font-size:10px;padding:3px 8px;flex-shrink:0;" onclick="reconnectAccount(${i})">再認証</button>`
+      }
+    </div>`;
+  }).join('');
+}
+
+function updateSidebarFooter() {
+  const active=getActiveAccounts();
+  const footer=document.querySelector('.sidebar-footer');
+  if(!footer) return;
+  if(active.length>0) {
+    footer.innerHTML=`<span class="status-dot"></span><span style="font-size:11px;color:var(--text-muted);">Claude API + Gmail ${active.length}件接続中</span>`;
+  } else {
+    footer.innerHTML='<span class="status-dot"></span><span style="font-size:11px;color:var(--text-muted);">Claude API 接続中</span>';
+  }
+}
+
+function showAddAccountForm() {
+  const f=document.getElementById('gmail-add-form');
+  if(f) f.style.display='block';
+}
+function hideAddAccountForm() {
+  const f=document.getElementById('gmail-add-form');
+  if(f) f.style.display='none';
+}
+
+function addGmailAccount() {
   const clientId=document.getElementById('gmail-client').value.trim();
   if(!clientId){alert('Google OAuth2 クライアントIDを入力してください');return;}
-  localStorage.setItem('gmailClientId',clientId);
-
-  if(typeof google==='undefined') {
+  if(typeof google==='undefined'){
     alert('Google Identity Services が読み込まれていません。\nインターネット接続を確認してページを再読み込みしてください。');
     return;
   }
-
-  tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id: clientId,
-    scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
-    callback: handleOAuthCallback
+  const tc=google.accounts.oauth2.initTokenClient({
+    client_id:clientId,
+    scope:'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
+    callback:resp=>handleAccountOAuthCallback(clientId,tc,resp)
   });
-  tokenClient.requestAccessToken({prompt:'consent'});
+  tc.requestAccessToken({prompt:'consent'});
 }
 
-async function handleOAuthCallback(response) {
-  if(response.error) {
-    updateGmailConnectUI('error','認証エラー: '+response.error);
-    return;
-  }
-  gmailToken=response.access_token;
-  try {
-    const r=await fetch('https://www.googleapis.com/oauth2/v1/userinfo',{headers:{Authorization:`Bearer ${gmailToken}`}});
-    const user=await r.json();
-    gmailUser=user.email||'接続済み';
-  } catch(e) { gmailUser='接続済み'; }
-  updateGmailConnectUI('connected',gmailUser);
-}
-
-function updateGmailConnectUI(state,text) {
-  const dot=document.getElementById('gmail-status-dot');
-  const txt=document.getElementById('gmail-status-text');
-  const connBtn=document.getElementById('gmail-connect-btn');
-  const connInfo=document.getElementById('gmail-connected-info');
-  const setupForm=document.getElementById('gmail-setup-form');
-
-  if(state==='connected') {
-    if(dot){dot.style.background='var(--green)';}
-    if(txt){txt.style.color='var(--green)';txt.textContent='✓ 接続済み — '+text;}
-    if(connBtn){connBtn.textContent='再認証';}
-    if(connInfo){connInfo.style.display='block';const emailEl=connInfo.querySelector('.gmail-user-email');if(emailEl)emailEl.textContent=text;}
-    if(setupForm){setupForm.style.display='none';}
-    document.querySelector('.sidebar-footer').innerHTML=`<span class="status-dot"></span><span style="font-size:11px;color:var(--text-muted);">Claude API + Gmail 接続中 (${text})</span>`;
-  } else if(state==='error') {
-    if(dot){dot.style.background='var(--red)';}
-    if(txt){txt.style.color='var(--red)';txt.textContent=text;}
-    if(setupForm){setupForm.style.display='block';}
+async function handleAccountOAuthCallback(clientId,tc,response) {
+  if(response.error){alert('認証エラー: '+response.error);return;}
+  const token=response.access_token;
+  const expiry=Date.now()+((response.expires_in||3600)*1000);
+  let email='接続済み';
+  try{
+    const r=await fetch('https://www.googleapis.com/oauth2/v1/userinfo',{headers:{Authorization:`Bearer ${token}`}});
+    const u=await r.json();
+    email=u.email||'接続済み';
+  }catch{}
+  const existing=gmailAccounts.findIndex(a=>a.email===email);
+  if(existing>=0){
+    gmailAccounts[existing]={...gmailAccounts[existing],token,tokenExpiry:expiry};
   } else {
-    if(dot){dot.style.background='var(--amber)';}
-    if(txt){txt.style.color='var(--amber)';txt.textContent='未接続 — Googleアカウントでログインしてください';}
-    if(connInfo){connInfo.style.display='none';}
-    if(setupForm){setupForm.style.display='block';}
-    document.querySelector('.sidebar-footer').innerHTML='<span class="status-dot"></span><span style="font-size:11px;color:var(--text-muted);">Claude API 接続中</span>';
+    gmailAccounts.push({clientId,email,token,tokenExpiry:expiry});
   }
+  persistAccounts();
+  renderAccountList();
+  updateSidebarFooter();
+  hideAddAccountForm();
 }
 
-function disconnectGmail() {
-  if(gmailToken && typeof google!=='undefined') {
-    google.accounts.oauth2.revoke(gmailToken,()=>{});
+function reconnectAccount(index) {
+  const a=gmailAccounts[index];
+  if(!a) return;
+  if(typeof google==='undefined'){alert('Google Identity Services が読み込まれていません');return;}
+  const tc=google.accounts.oauth2.initTokenClient({
+    client_id:a.clientId,
+    scope:'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
+    callback:resp=>handleAccountOAuthCallback(a.clientId,tc,resp)
+  });
+  tc.requestAccessToken({prompt:''});
+}
+
+function disconnectAccount(index) {
+  const a=gmailAccounts[index];
+  if(!a) return;
+  if(a.token&&typeof google!=='undefined'){
+    google.accounts.oauth2.revoke(a.token,()=>{});
   }
-  gmailToken=null; gmailUser=null;
-  updateGmailConnectUI('disconnected','');
+  gmailAccounts.splice(index,1);
+  persistAccounts();
+  renderAccountList();
+  updateSidebarFooter();
 }
 
 // Gmail REST API ヘルパー
-async function gmailApiFetch(endpoint) {
-  if(!gmailToken) throw new Error('Gmail未接続');
+async function gmailApiFetchWithToken(endpoint,token) {
   const res=await fetch(`https://www.googleapis.com/gmail/v1/${endpoint}`,{
-    headers:{Authorization:`Bearer ${gmailToken}`}
+    headers:{Authorization:`Bearer ${token}`}
   });
-  if(res.status===401) {
-    gmailToken=null;
-    updateGmailConnectUI('error','トークン期限切れ — 再認証してください');
-    throw new Error('認証期限切れ');
-  }
+  if(res.status===401) throw new Error('認証期限切れ');
   return res.json();
 }
 
-async function fetchGmailList(query,maxResults=50,pageToken=null) {
+async function gmailApiFetch(endpoint) {
+  const token=getFirstToken();
+  if(!token) throw new Error('Gmail未接続');
+  return gmailApiFetchWithToken(endpoint,token);
+}
+
+async function fetchGmailList(query,maxResults=50,pageToken=null,token=null) {
+  const t=token||getFirstToken();
+  if(!t) throw new Error('Gmail未接続');
   const params=new URLSearchParams({q:query,maxResults});
   if(pageToken) params.set('pageToken',pageToken);
-  const data=await gmailApiFetch(`users/me/messages?${params}`);
+  const data=await gmailApiFetchWithToken(`users/me/messages?${params}`,t);
   return {messages:data.messages||[],nextPageToken:data.nextPageToken||null};
 }
 
-async function fetchGmailMessage(id) {
-  return gmailApiFetch(`users/me/messages/${id}?format=full`);
+async function fetchGmailMessage(id,token=null) {
+  const t=token||getFirstToken();
+  if(!t) throw new Error('Gmail未接続');
+  return gmailApiFetchWithToken(`users/me/messages/${id}?format=full`,t);
 }
 
 function getGmailHeader(msg,name) {
@@ -1585,19 +1691,12 @@ function saveGmailSettings() {
   const auto=document.getElementById('fu-auto').checked;
   const days=document.getElementById('fu-days').value;
   const reply=document.getElementById('reply-auto').checked;
-  if(document.getElementById('gmail-client')?.value) {
-    localStorage.setItem('gmailClientId',document.getElementById('gmail-client').value);
-  }
   alert(`✓ 設定を保存しました\n自動フォローアップ: ${auto?'有効（'+days+'後）':'無効'}\n返信自動検知: ${reply?'有効':'無効'}`);
 }
 
-// 起動時にClient IDを復元
-(function restoreSavedSettings(){
-  const clientId=localStorage.getItem('gmailClientId');
-  if(clientId){
-    const el=document.getElementById('gmail-client');
-    if(el) el.value=clientId;
-  }
+// 起動時にアカウント情報を復元
+(function(){
+  initGmailAccounts();
 })();
 
 // ===== スプレッドシート同期 =====
