@@ -508,9 +508,13 @@
       <button class="btn" onclick="clearInboxCache()">キャッシュリセット</button>
       <button class="btn btn-primary" id="inbox-btn" onclick="analyzeInbox()">Gmailを取得して解析</button>
     </div>
-    <div class="inbox-content" id="inbox-content">
-      <div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 0;">「Gmailを取得して解析」ボタンで受信メールを解析し、案件情報を自動抽出します</div>
+    <!-- APIキー未設定通知バー -->
+    <div id="inbox-api-notice" style="display:none;background:var(--amber-soft);border-bottom:1px solid rgba(217,119,6,.22);padding:9px 20px;font-size:11px;color:var(--amber);align-items:center;gap:10px;flex-shrink:0;">
+      <span style="font-size:14px;flex-shrink:0;">⚠</span>
+      <span>Claude APIキー未設定のため自動判定は停止中です。Gmailの取得は行えますが、メール内容の関連性判定・情報抽出は機能しません。</span>
+      <button onclick="dismissInboxApiNotice()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;color:var(--amber);line-height:1;padding:0 4px;font-family:inherit;flex-shrink:0;">×</button>
     </div>
+    <div class="inbox-content" id="inbox-content"></div>
   </div>
 
   <!-- 台本・コンテンツ生成 -->
@@ -841,7 +845,7 @@ function setView(v) {
   document.querySelectorAll('.nav-item')[map[v]]?.classList.add('active');
   closePanel();
   if(v==='followup') renderFollowups();
-  if(v==='inbox') updateCacheInfoDisplay();
+  if(v==='inbox') { updateCacheInfoDisplay(); renderInboxSavedSection(); }
   if(v==='shooting') { const d=new Date(); document.getElementById('sh-date').value=d.toISOString().split('T')[0]; }
 }
 
@@ -1112,6 +1116,49 @@ function updateCacheInfoDisplay() {
   if(el) el.textContent=`保存済み: ${loadInboxCache().length}件`;
 }
 
+// 受信解析ページ入場時: 保存済みデータを常時表示
+function renderInboxSavedSection() {
+  const cache=loadInboxCache();
+  const el=document.getElementById('inbox-content');
+  if(!el) return;
+
+  // APIキー通知を表示（セッション内で未却下の場合）
+  if(!sessionStorage.getItem('inboxApiNoticeDismissed')) {
+    const notice=document.getElementById('inbox-api-notice');
+    if(notice) notice.style.display='flex';
+  }
+
+  if(!cache.length) {
+    el.innerHTML=`<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:60px 0;">
+      <div style="font-size:32px;margin-bottom:12px;">📬</div>
+      「Gmailを取得して解析」ボタンで受信メールを解析し、案件情報を自動抽出します
+    </div>`;
+    return;
+  }
+
+  currentInboxData=[...cache];
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 0 12px;margin-bottom:4px;border-bottom:2px solid var(--border);">
+      <span style="font-size:12px;font-weight:700;color:var(--text-primary);">保存済みの解析結果</span>
+      <span style="font-size:11px;background:var(--accent-soft);color:var(--green);border-radius:4px;padding:2px 9px;font-weight:600;">${cache.length}件</span>
+      <span style="font-size:10px;color:var(--text-muted);">Gmail接続状態に関わらず常時表示</span>
+    </div>
+    ${cache.map((m,i)=>mailCardHtml(m,i)).join('')}
+  `;
+}
+
+function dismissInboxApiNotice() {
+  const notice=document.getElementById('inbox-api-notice');
+  if(notice) notice.style.display='none';
+  sessionStorage.setItem('inboxApiNoticeDismissed','1');
+}
+
+// API解析失敗時に通知バーを再表示
+function showInboxApiNotice() {
+  const notice=document.getElementById('inbox-api-notice');
+  if(notice) notice.style.display='flex';
+}
+
 // メール1件をカードHTMLに変換
 function mailCardHtml(m,i) {
   const accountBadge = m.accountEmail
@@ -1181,9 +1228,12 @@ async function processMsgIds(msgIds, onProgress, account=null) {
 本文:${body.slice(0,400)}`;
       const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}]})});
       const d=await r.json();
-      const text=(d.content?.[0]?.text||'{}').replace(/```json\n?|```/g,'').trim();
-      ext={...ext,...JSON.parse(text)};
-    }catch{}
+      if(r.status===401||d.error?.type==='authentication_error') { showInboxApiNotice(); }
+      else {
+        const text=(d.content?.[0]?.text||'{}').replace(/```json\n?|```/g,'').trim();
+        ext={...ext,...JSON.parse(text)};
+      }
+    }catch{ showInboxApiNotice(); }
     return {id:msg.id,from,company,subject,when:formatGmailDate(date),body:body.slice(0,800),ext,accountEmail};
   }));
   saveToInboxCache(analyzed);
@@ -1221,15 +1271,25 @@ async function analyzeInbox() {
   const active=getActiveAccounts();
 
   if(!active.length) {
-    el.innerHTML=`<div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:32px;text-align:center;max-width:480px;margin:40px auto;">
-      <div style="font-size:36px;margin-bottom:12px;">📧</div>
-      <div style="font-size:14px;font-weight:600;margin-bottom:8px;">Gmailに接続されていません</div>
-      <div style="font-size:11px;color:var(--text-muted);line-height:1.8;margin-bottom:16px;">「Gmail 連携設定」でGoogleアカウントにログインすると<br>実際の受信メールを取得・解析できます</div>
-      <div style="display:flex;gap:8px;justify-content:center;">
-        <button class="btn btn-primary" onclick="setView('gmail-setup')">Gmail を接続する</button>
-        <button class="btn" onclick="analyzeInboxMock()">デモデータで確認</button>
-      </div>
-    </div>`;
+    const cache=loadInboxCache();
+    const savedHtml=cache.length ? `
+      <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:12px;font-weight:700;color:var(--text-primary);">保存済みの解析結果</span>
+          <span style="font-size:11px;background:var(--accent-soft);color:var(--green);border-radius:4px;padding:2px 9px;font-weight:600;">${cache.length}件</span>
+        </div>
+        ${cache.map((m,i)=>mailCardHtml(m,i)).join('')}
+      </div>` : '';
+    el.innerHTML=`
+      <div style="background:var(--navy-3);border:1px solid var(--border);border-radius:10px;padding:32px;text-align:center;max-width:480px;margin:40px auto;">
+        <div style="font-size:36px;margin-bottom:12px;">📧</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px;">Gmailに接続されていません</div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.8;margin-bottom:16px;">「Gmail 連携設定」でGoogleアカウントにログインすると<br>実際の受信メールを取得・解析できます</div>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          <button class="btn btn-primary" onclick="setView('gmail-setup')">Gmail を接続する</button>
+          <button class="btn" onclick="analyzeInboxMock()">デモデータで確認</button>
+        </div>
+      </div>${savedHtml}`;
     btn.textContent='Gmailを取得して解析'; btn.disabled=false;
     return;
   }
